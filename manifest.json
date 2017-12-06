@@ -1,0 +1,29 @@
+{
+	"manifest_version": 2,
+	"name": "Zhihu ads blocker",
+	"version": "0.1",
+	"permissions": [
+		"webRequest",
+		"tabs",
+		"contextMenus",
+		"*://*.zhihu.com/"
+	],
+	"background": {
+		"scripts": ["background.js"]
+	},
+	"content_scripts": [
+		{
+			"matches": [
+				"http://www.zhihu.com/*",
+				"https://www.zhihu.com/*"
+			],
+			"js": [
+				"zhihuFilter.js",
+				"lib.js"
+			]
+		}
+	],
+	"browser_action": {
+		"default_icon": "images/icon.png"
+	}
+}
