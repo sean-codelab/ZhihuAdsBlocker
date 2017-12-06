@@ -41,21 +41,16 @@ chrome.browserAction.onClicked.addListener(function() {
 });
 
 blockUser = function(info) {
+	if(disabled) {
+		return;
+	}
+
 	url = info.linkUrl;
-
-	httpHeader = "http://www.zhihu.com"
 	httpsHeader = "https://www.zhihu.com"
-
 	userName = undefined;
 
 	// User link must follow this pattern: */people/{username} or */org/{username}
 	if(url.startsWith(httpsHeader)) {
-		urlSplit = url.split('/');
-		if(urlSplit.length >= 2 && (urlSplit[urlSplit.length - 2] === "people" || urlSplit[urlSplit.length - 2] === "org")) {
-			userName = urlSplit[urlSplit.length - 1];
-		}
-	}
-	else if(url.startsWith(httpHeader)) {
 		urlSplit = url.split('/');
 		if(urlSplit.length >= 2 && (urlSplit[urlSplit.length - 2] === "people" || urlSplit[urlSplit.length - 2] === "org")) {
 			userName = urlSplit[urlSplit.length - 1];
@@ -72,13 +67,18 @@ blockUser = function(info) {
 	}
 };
 
+var blockVoters = function(info) {
+
+}
+
 // Add "Block User" menu item to right click menu when there's not one
 // Remove "Block User" menu item when locating to other pages
 var blockUserMenuItemID = undefined;
+var blockVotersMenuItemID = undefined;
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
 	chrome.tabs.getSelected(activeInfo.windowId, function(tab) { 
-		if(tab.url.startsWith("https://www.zhihu.com/") || tab.url.startsWith("http://www.zhihu.com/")) {
+		if(!disabled && (tab.url.startsWith("https://www.zhihu.com/"))) {
 			if(!blockUserMenuItemID) {
 				blockUserMenuItemID = chrome.contextMenus.create({
 					title: "Block this user",
@@ -86,11 +86,22 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 					onclick: blockUser
 				});
 			}
+			if(!blockVotersMenuItemID) {
+				blockVotersMenuItemID = chrome.contextMenus.create({
+					title: "Block these voters",
+					contexts: ["selection"],
+					onclick: blockVoters
+				});
+			}
 		}
 		else {
 			if(blockUserMenuItemID) {
 				chrome.contextMenus.remove(blockUserMenuItemID);
 				blockUserMenuItemID = undefined;
+			}
+			if(blockVotersMenuItemID) {
+				chrome.contextMenus.remove(blockVotersMenuItemID);
+				blockVotersMenuItemID = undefined;
 			}
 		}
 	})

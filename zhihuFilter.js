@@ -10,8 +10,10 @@ var patternsToBeHidden = [
 	"//span[contains(text(), '参与了 Live')]/parent::div/parent::div/parent::div/parent::div[@class='Card TopstoryItem']",
 	// Hide LIVE promotion posts
 	"//span[contains(text(), '对 Live 感兴趣')]/parent::div/parent::div/parent::div/parent::div[@class='Card TopstoryItem']",
-	// Hide posts from certified org accounts
+	// Hide posts from certified org accounts on timeline
 	"//a[contains(@data-tooltip, '已认证的官方帐号')]/parent::span/parent::div/parent::div/parent::div/parent::div/parent::div[@class='Card TopstoryItem']",
+	// Hide posts from certified org accounts on question
+	"//a[contains(@data-tooltip, '已认证的官方帐号')]/parent::span/parent::div/parent::div/parent::div/parent::div/parent::div/parent::div/parent::div[@class='List-item']",
 	// Hide LIVE transaction posts
 	"//span[contains(text(), '赞助了 Live')]/parent::div/parent::div/parent::div/parent::div",
 	// Hide EBook Ads cards
