@@ -8,8 +8,8 @@ Filter out LIVE recommendations and notifications.<br/>
 Filter out EBook recommendations.<br/>
 Remove right column ads.<br/>
 One-click user blocker.<br/>
+One-click voters blocker.<br/>
 <br/>
-TODO: One-click voters blocker.<br/>
 TODO: Shows banner for the result of blocking user/voters.<br/>
 <br/>
 Instructions:<br/>
