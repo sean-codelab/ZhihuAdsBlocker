@@ -12,7 +12,7 @@ var removeMatchingPatterns = function(xpaths) {
 			}   
 			if(results.length > 0) {
 				chrome.runtime.sendMessage({numOfBlockers: results.length}, function(){});
-				console.log("Removed nodes because of " + xpath + ": \n")
+				console.log("Remove nodes because of " + xpath + ": \n")
 				for(let removedNode of results) {
 					removedNode.parentNode.removeChild(removedNode);
 				}   
@@ -52,7 +52,7 @@ var hideMatchingPatterns = function(xpaths) {
 
 // Delete all children of hidden nodes
 var deleteChildren = function() {
-	var markedXPath = "//div[@class='Card TopstoryItem' and @ishiddenbyplugin='true']";
+	var markedXPath = "//div[(@class='Card TopstoryItem' or @class='List-item') and @ishiddenbyplugin='true']";
 	var allHiddenNodeList = document.evaluate(markedXPath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 	if(allHiddenNodeList != null) {
 		for(let i = 0, length = allHiddenNodeList.snapshotLength; i < length; ++i) {
@@ -69,11 +69,31 @@ var deleteChildren = function() {
 	}
 }
 
+// Returns answer id based on selection text
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	var responsePayload = {}; 
+	if(request.selectionText != null) {
+		var xpath_answer = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[contains(@class, 'AnswerItem')]";
+		var xpath_upvote_count = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[contains(@class, 'AnswerItem')]//meta[@itemprop='upvoteCount']";
+		var answerList = document.evaluate(xpath_answer, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+		if(answerList != null && answerList.snapshotLength === 1) {
+			var answerItem = answerList.snapshotItem(0).getAttribute('name');
+			responsePayload['answerId'] = answerItem;
+			var upvoteCount = document.evaluate(xpath_upvote_count, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0).getAttribute('content');
+			responsePayload['upvoteCount'] = upvoteCount;
+		} 
+		else {
+			console.log("ERROR: More than one answer or no answer is found.");
+		}
+	}   
+	sendResponse(responsePayload);
+});
+
 // Periodically loop over all hidden nodes and delete their child nodes
+// Periodically delete all matching nodes
 var intervalID = setInterval(function(){
 	deleteChildren();
 }, 500);
-
 
 var blockFunc = function(refresh=false) {
 	chrome.runtime.sendMessage({getAdBlockerDisabled: true, refreshCount: refresh}, function(response){

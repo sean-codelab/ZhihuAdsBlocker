@@ -11,6 +11,8 @@ var patternsToBeHidden = [
 	"//button[contains(@class, 'TopstoryItem-advertButton')]/parent::div/parent::div",
 	// Hide LIVE participation posts
 	"//span[contains(text(), '参与了 Live')]/parent::div/parent::div/parent::div/parent::div[@class='Card TopstoryItem']",
+	// Hide LIVE promotion posts
+	"//span[contains(text(), '对 Live 感兴趣')]/parent::div/parent::div/parent::div/parent::div[@class='Card TopstoryItem']",
 	// Hide posts from certified org accounts
 	"//a[contains(@data-tooltip, '已认证的官方帐号')]/parent::span/parent::div/parent::div/parent::div/parent::div/parent::div[@class='Card TopstoryItem']",
 	// Hide LIVE transaction posts
