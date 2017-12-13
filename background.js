@@ -56,12 +56,16 @@ var blockUser = function(info) {
 	}
 
 	if(userId) {
-		blockUserID(userId);
+		blockUserID(userId, 3);
 	}
 };
 
 // Given a user ID, block this user
-var blockUserID = function(userId) {
+var blockUserID = function(userId, retry) {
+	if(retry <= 0) {
+		console.log("ERROR: Running out of retry attempts.");
+		return;
+	}
 	var blockRequest = new XMLHttpRequest();
 	blockRequest.onreadystatechange = function(result) {
 		if (blockRequest.readyState == XMLHttpRequest.DONE) {
@@ -69,7 +73,8 @@ var blockUserID = function(userId) {
 				console.log("Blocking succeeded.");
 			}
 			else {
-				console.log("ERROR: Blocking failed!");
+				console.log("ERROR: Blocking failed!\nRetry " + (retry - 1) + " more times.");
+				blockUserID(userId, retry - 1);
 			}
 		}
 	};
@@ -91,7 +96,7 @@ var getVoters = function(offset, answerId) {
 				// Skip anonymous users
 				if(peopleId.length > 0) {
 					console.log("Block this user: " + peopleId);
-					blockUserID(peopleId);
+					blockUserID(peopleId, 3);
 				}
 			}
 		}
