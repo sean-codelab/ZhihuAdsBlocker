@@ -1,23 +1,31 @@
-var count = 0;
 var disabled = false;
+var blockCount = {};
+
+var removeBadgeText = function() {
+	chrome.browserAction.setBadgeText({text: ""});
+}
+
+var setBadgeText = function(count) {
+	if(count > 0) {
+		chrome.browserAction.setBadgeText({text: count.toString()});
+	}
+	else {
+		removeBadgeText();
+	}
+}
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+	var tabId = sender.tab.id;
 	var responsePayload = {};
 	if(request.getAdBlockerDisabled != null) {
 		responsePayload["AdBlockerDisabled"] = disabled;
 	}
-	if(request.refreshCount != null && request.refreshCount === true) {
-		console.log("Refresh detected.");
-		if(!disabled) {
-			chrome.browserAction.setBadgeText({text: ""});
-		}
-		count = 0;
-	}
 	if(!disabled && request.numOfBlockers != null) {
-		count += request.numOfBlockers;
-		if(count > 0) {
-			chrome.browserAction.setBadgeText({text: count.toString()});
+		if(!blockCount.hasOwnProperty(tabId)) {
+			blockCount[tabId] = 0;
 		}
+		blockCount[tabId] += request.numOfBlockers;
+		setBadgeText(blockCount[tabId]);
 	}
 	if(Object.keys(responsePayload).length > 0) {
 		sendResponse(responsePayload);
@@ -27,8 +35,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 // When clicking on the icon, plugin will be enabled/disabled
 chrome.browserAction.onClicked.addListener(function() {
 	if(disabled) {
-		chrome.browserAction.setBadgeText({text: ""});
-		count = 0;
+		removeBadgeText();
+		blockCount = {};
 		disabled = false;
 	}
 	else {
@@ -113,7 +121,7 @@ var blockVoters = function(info) {
 
 	selection = info.selectionText;
 	// Let current active tab to look for answer ID
-	chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		chrome.tabs.sendMessage(tabs[0].id, {selectionText: selection}, function(response) {
 			if(typeof response.answerId === undefined || typeof response.upvoteCount === undefined) {
 				console.log("Frontend failed to give back answer ID or upvote count.");
@@ -135,8 +143,16 @@ var blockUserMenuItemID = undefined;
 var blockVotersMenuItemID = undefined;
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
-	chrome.tabs.getSelected(activeInfo.windowId, function(tab) { 
-		if(!disabled && (tab.url.startsWith("https://www.zhihu.com/"))) {
+	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+		if(tabs.length != 1) {
+			return;
+		}
+		var tab = tabs[0];
+		if(!disabled && typeof(tab.url) !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
+			if(!blockCount.hasOwnProperty(tab.id)) {
+				blockCount[tab.id] = 0;
+			}
+			setBadgeText(blockCount[tab.id]);
 			if(!blockUserMenuItemID) {
 				blockUserMenuItemID = chrome.contextMenus.create({
 					title: "Block this user",
@@ -153,6 +169,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 			}
 		}
 		else {
+			removeBadgeText();
 			if(blockUserMenuItemID) {
 				chrome.contextMenus.remove(blockUserMenuItemID);
 				blockUserMenuItemID = undefined;
@@ -162,5 +179,20 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 				blockVotersMenuItemID = undefined;
 			}
 		}
-	})
+	});
+});
+
+// Remove binding block counts
+chrome.tabs.onRemoved.addListener(function(tabId) {
+	delete blockCount[tabId];
+});
+
+// URL change / Refresh detected. Flush the blocking count.
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+	if(!disabled && (tab.url.startsWith("https://www.zhihu.com/"))) {
+		if(typeof(tab.url) !== undefined && changeInfo.status === "loading") {
+			blockCount[tabId] = 0;
+			removeBadgeText();
+		}
+	}
 });

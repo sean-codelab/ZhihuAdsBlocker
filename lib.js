@@ -95,8 +95,8 @@ var intervalID = setInterval(function(){
 	deleteChildren();
 }, 500);
 
-var blockFunc = function(refresh=false) {
-	chrome.runtime.sendMessage({getAdBlockerDisabled: true, refreshCount: refresh}, function(response){
+var blockFunc = function() {
+	chrome.runtime.sendMessage({getAdBlockerDisabled: true}, function(response){
 		if(response == null) {
 			console.log("Extension plugin error: response not received from background.js");
 			return;
@@ -112,6 +112,6 @@ var blockFunc = function(refresh=false) {
 	}); 
 };
 
-window.addEventListener("load", blockFunc(true));
+window.addEventListener("load", blockFunc);
 window.addEventListener("scroll", blockFunc);
 
