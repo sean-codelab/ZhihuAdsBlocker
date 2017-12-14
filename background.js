@@ -215,21 +215,6 @@ chrome.tabs.onRemoved.addListener(function(tabId) {
 	delete blockCount[tabId];
 });
 
-var sendRefreshSignal = function(tab) {
-	if(tab.url !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
-		chrome.tabs.sendMessage(tab.id, {refresh: true}, function(response) {
-			if(response === undefined) {
-				console.log("Retry sending refresh signal.");
-				sendRefreshSignal(tab.id);
-			}
-			else if(response.refreshed === undefined) {
-				console.log("Retry sending refresh signal.");
-				sendRefreshSignal(tab.id);
-			}
-		});
-	}
-}
-
 // URL change / Refresh detected. Flush the blocking count.
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
@@ -240,6 +225,5 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 		if(current_tab.id === tabId) {
 			uponRevisitOrRefresh(tab, true);
 		}
-		sendRefreshSignal(tab);
 	});
 });

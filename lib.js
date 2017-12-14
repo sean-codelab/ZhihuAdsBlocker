@@ -99,17 +99,16 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			}
 		}
 	}
-	// Upon refresh, the blockFunc is registered
-	if(request.refresh != null) {
-		blockFunc();
-		responsePayload['refreshed'] = true;
-	}
 	sendResponse(responsePayload);
 });
 
 // Periodically loop over all hidden nodes and delete their child nodes
 // Periodically delete all matching nodes
-var intervalID = null;
+var intervalID = setInterval(function() {
+	removeMatchingPatterns(patternsToBeRemoved);
+	hideMatchingPatterns(patternsToBeHidden);
+	deleteChildren();
+}, 100);
 
 var blockFunc = function() {
 	chrome.runtime.sendMessage({getAdBlockerDisabled: true}, function(response){
