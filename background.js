@@ -14,6 +14,10 @@ var setBadgeText = function(count) {
 	}
 }
 
+var disabledBadgeText = function() {
+	chrome.browserAction.setBadgeText({text: "OFF"});
+}
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	var tabId = sender.tab.id;
 	var responsePayload = {};
@@ -25,7 +29,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			blockCount[tabId] = 0;
 		}
 		blockCount[tabId] += request.numOfBlockers;
-		setBadgeText(blockCount[tabId]);
+		chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+			if(tabs.length != 1) {
+				return;
+			}
+			var current_tab = tabs[0];
+			if(current_tab.id === tabId) {
+				setBadgeText(blockCount[tabId]);
+			}
+		});
 	}
 	if(Object.keys(responsePayload).length > 0) {
 		sendResponse(responsePayload);
@@ -36,11 +48,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 chrome.browserAction.onClicked.addListener(function() {
 	if(disabled) {
 		removeBadgeText();
-		blockCount = {};
 		disabled = false;
 	}
 	else {
-		chrome.browserAction.setBadgeText({text: "OFF"});
+		disabledBadgeText();
 		disabled = true;
 	}
 });
@@ -142,14 +153,22 @@ var blockVoters = function(info) {
 var blockUserMenuItemID = undefined;
 var blockVotersMenuItemID = undefined;
 
-chrome.tabs.onActivated.addListener(function(activeInfo) {
-	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
-		if(tabs.length != 1) {
-			return;
-		}
-		var tab = tabs[0];
-		if(!disabled && typeof(tab.url) !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
-			if(!blockCount.hasOwnProperty(tab.id)) {
+var removeMenuItems = function() {
+	if(blockUserMenuItemID) {
+		chrome.contextMenus.remove(blockUserMenuItemID);
+		blockUserMenuItemID = undefined;
+	}
+	if(blockVotersMenuItemID) {
+		chrome.contextMenus.remove(blockVotersMenuItemID);
+		blockVotersMenuItemID = undefined;
+	}
+}
+
+var uponRevisitOrRefresh = function(tab, refresh) {
+	// Lands on zhihu.com
+	if(typeof(tab.url) !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
+		if(!disabled) {
+			if(!blockCount.hasOwnProperty(tab.id) || refresh) {
 				blockCount[tab.id] = 0;
 			}
 			setBadgeText(blockCount[tab.id]);
@@ -169,16 +188,23 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 			}
 		}
 		else {
-			removeBadgeText();
-			if(blockUserMenuItemID) {
-				chrome.contextMenus.remove(blockUserMenuItemID);
-				blockUserMenuItemID = undefined;
-			}
-			if(blockVotersMenuItemID) {
-				chrome.contextMenus.remove(blockVotersMenuItemID);
-				blockVotersMenuItemID = undefined;
-			}
+			disabledBadgeText();
+			removeMenuItems();
 		}
+	}
+	else {
+		removeBadgeText();
+		removeMenuItems();
+	}
+}
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+		if(tabs.length != 1) {
+			return;
+		}
+		var tab = tabs[0];
+		uponRevisitOrRefresh(tab, false);
 	});
 });
 
@@ -189,10 +215,13 @@ chrome.tabs.onRemoved.addListener(function(tabId) {
 
 // URL change / Refresh detected. Flush the blocking count.
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-	if(!disabled && (tab.url.startsWith("https://www.zhihu.com/"))) {
-		if(typeof(tab.url) !== undefined && changeInfo.status === "loading") {
-			blockCount[tabId] = 0;
-			removeBadgeText();
+	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+		if(tabs.length != 1) {
+			return;
 		}
-	}
+		var current_tab = tabs[0];
+		if(current_tab.id === tabId) {
+			uponRevisitOrRefresh(tab, true);
+		}
+	});
 });
