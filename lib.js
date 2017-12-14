@@ -81,19 +81,34 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			responsePayload['answerId'] = answerItem;
 			var upvoteCount = document.evaluate(xpath_upvote_count, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0).getAttribute('content');
 			responsePayload['upvoteCount'] = upvoteCount;
+			responsePayload['isAnswer'] = true;
 		} 
 		else {
-			console.log("ERROR: More than one answer or no answer is found.");
+			var xpath_article = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[contains(@class, 'ArticleItem')]";
+			var articleList = document.evaluate(xpath_article, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+			if(articleList != null && articleList.snapshotLength === 1) {
+				var articleItem = JSON.parse(articleList.snapshotItem(0).getAttribute('data-za-extra-module'));
+				var articleVoteCount = articleItem.card.content.upvote_num;
+				var articleId = articleItem.card.content.token;
+				responsePayload['answerId'] = articleId;
+				responsePayload['upvoteCount'] = articleVoteCount;
+				responsePayload['isAnswer'] = false;
+			}
+			else {
+				console.log("ERROR: More than one answer or no answer is found.");
+			}
 		}
-	}   
+	}
+	// Upon refresh, the blockFunc is registered
+	if(request.refresh != null) {
+		blockFunc();
+	}
 	sendResponse(responsePayload);
 });
 
 // Periodically loop over all hidden nodes and delete their child nodes
 // Periodically delete all matching nodes
-var intervalID = setInterval(function(){
-	deleteChildren();
-}, 500);
+var intervalID = null;
 
 var blockFunc = function() {
 	chrome.runtime.sendMessage({getAdBlockerDisabled: true}, function(response){
@@ -101,17 +116,20 @@ var blockFunc = function() {
 			console.log("Extension plugin error: response not received from background.js");
 			return;
 		}
-		if(!response.AdBlockerDisabled){
-			if(patternsToBeRemoved != undefined && patternsToBeRemoved != null && patternsToBeRemoved.length > 0) {
-				removeMatchingPatterns(patternsToBeRemoved);
+		if(!response.AdBlockerDisabled) {
+			if(intervalID === null) {
+				intervalID = setInterval(function() {
+					removeMatchingPatterns(patternsToBeRemoved);
+					hideMatchingPatterns(patternsToBeHidden);
+					deleteChildren();
+				}, 100);
 			}
-			if(patternsToBeHidden != undefined && patternsToBeHidden != null && patternsToBeHidden.length > 0) {
-				hideMatchingPatterns(patternsToBeHidden);
+		}
+		else {
+			if(intervalID !== null) {
+				clearInterval(intervalID);
+				intervalID = null;
 			}
 		}
 	}); 
 };
-
-window.addEventListener("load", blockFunc);
-window.addEventListener("scroll", blockFunc);
-

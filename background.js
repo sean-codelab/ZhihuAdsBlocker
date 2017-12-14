@@ -103,8 +103,10 @@ var blockUserID = function(userId, retry) {
 
 // Collect user IDs that has voted for the given answer ID
 // The GET response has a limit of 20 user IDs
-var getVoters = function(offset, answerId) {
-	url = "https://www.zhihu.com/api/v4/answers/" + answerId + "/voters?limit=20&offset=" + offset
+var getVoters = function(offset, answerId, isAnswer) {
+	var url = "https://www.zhihu.com/api/v4/answers/" + answerId + "/voters?limit=20&offset=" + offset
+	var url_article = "https://www.zhihu.com/api/v4/articles/" + answerId + "/likers?limit=20&offset=" + offset
+
 	var blockRequest = new XMLHttpRequest();
 	blockRequest.onreadystatechange = function(result) {
 		if (blockRequest.readyState == XMLHttpRequest.DONE) {
@@ -120,7 +122,7 @@ var getVoters = function(offset, answerId) {
 			}
 		}
 	};
-	blockRequest.open("GET", url, true);
+	blockRequest.open("GET", isAnswer? url : url_article, true);
 	blockRequest.send(null);
 }
 
@@ -140,7 +142,7 @@ var blockVoters = function(info) {
 			console.log("AnswerId: " + response.answerId + "; UpvoteCount: " + response.upvoteCount);
 			offset = 0;
 			while(offset < response.upvoteCount) {
-				getVoters(offset, response.answerId);
+				getVoters(offset, response.answerId, response.isAnswer);
 				offset += 20;
 			}
 		});
@@ -223,5 +225,6 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 		if(current_tab.id === tabId) {
 			uponRevisitOrRefresh(tab, true);
 		}
+		chrome.tabs.sendMessage(tabs[0].id, {refresh: true}, function(response) {});
 	});
 });
