@@ -8,6 +8,9 @@
 		"contextMenus",
 		"*://*.zhihu.com/"
 	],
+	"icons": {
+		"16": "images/block.png"
+	},
 	"background": {
 		"scripts": [
 			"zhihuFilter.js",
