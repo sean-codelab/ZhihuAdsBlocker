@@ -136,7 +136,7 @@ var blockVoters = function(info) {
 	// Let current active tab to look for answer ID
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		chrome.tabs.sendMessage(tabs[0].id, {selectionText: selection}, function(response) {
-			if(typeof response.answerId === undefined || typeof response.upvoteCount === undefined) {
+			if(response.answerId === undefined || response.upvoteCount === undefined) {
 				console.log("Frontend failed to give back answer ID or upvote count.");
 			}
 			console.log("AnswerId: " + response.answerId + "; UpvoteCount: " + response.upvoteCount);
@@ -168,7 +168,7 @@ var removeMenuItems = function() {
 
 var uponRevisitOrRefresh = function(tab, refresh) {
 	// Lands on zhihu.com
-	if(typeof(tab.url) !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
+	if(tab.url !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
 		if(!disabled) {
 			if(!blockCount.hasOwnProperty(tab.id) || refresh) {
 				blockCount[tab.id] = 0;
@@ -215,6 +215,21 @@ chrome.tabs.onRemoved.addListener(function(tabId) {
 	delete blockCount[tabId];
 });
 
+var sendRefreshSignal = function(tab) {
+	if(tab.url !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
+		chrome.tabs.sendMessage(tab.id, {refresh: true}, function(response) {
+			if(response === undefined) {
+				console.log("Retry sending refresh signal.");
+				sendRefreshSignal(tab.id);
+			}
+			else if(response.refreshed === undefined) {
+				console.log("Retry sending refresh signal.");
+				sendRefreshSignal(tab.id);
+			}
+		});
+	}
+}
+
 // URL change / Refresh detected. Flush the blocking count.
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
@@ -225,6 +240,6 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 		if(current_tab.id === tabId) {
 			uponRevisitOrRefresh(tab, true);
 		}
-		chrome.tabs.sendMessage(tabs[0].id, {refresh: true}, function(response) {});
+		sendRefreshSignal(tab);
 	});
 });

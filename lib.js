@@ -102,6 +102,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	// Upon refresh, the blockFunc is registered
 	if(request.refresh != null) {
 		blockFunc();
+		responsePayload['refreshed'] = true;
 	}
 	sendResponse(responsePayload);
 });
