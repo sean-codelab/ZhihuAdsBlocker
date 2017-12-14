@@ -3,7 +3,7 @@
 Functions:<br/>
 A personalized ads blocker of zhihu.com that improves the quality of timeline posts.<br/>
 Hide unwanted ads and promotions.<br/>
-Block posts made by certified org accounts, which are likely to post ads.<br/>
+Block posts made by certified org accounts, which are likely to post ads. This option could be toggled by right-clicking icon.<br/>
 Filter out LIVE recommendations and notifications.<br/>
 Filter out EBook recommendations.<br/>
 Remove right column ads.<br/>

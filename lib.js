@@ -1,5 +1,6 @@
 // Delete matching nodes
 var removeMatchingPatterns = function(xpaths) {
+	var numOfResults = 0;
 	for(let xpath of xpaths) {
 		var removedNodeList = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 		if(removedNodeList != null) {
@@ -11,20 +12,22 @@ var removeMatchingPatterns = function(xpaths) {
 				}   
 			}   
 			if(results.length > 0) {
-				chrome.runtime.sendMessage({numOfBlockers: results.length}, function(){});
-				console.log("Remove nodes because of " + xpath + ": \n")
+				numOfResults += results.length;
+				console.log("Remove " + results.length + " node" + (results.length > 1 ? "s" : "") + " because of " + xpath + ": \n")
 				for(let removedNode of results) {
 					removedNode.parentNode.removeChild(removedNode);
 				}   
 			}   
 		}   
 	}   
+	return numOfResults;
 }
 
 // Hide matching nodes
 // This handler is for Zhihu timeline posts only
 // Removing these nodes will cause unexpected indefinite loading new contents upon scrolling, so they have to be handled in a different way
 var hideMatchingPatterns = function(xpaths) {
+	var numOfResults = 0;
 	for(let xpath of xpaths) {
 		var hiddenNodeList = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 		if(hiddenNodeList != null) {
@@ -36,8 +39,8 @@ var hideMatchingPatterns = function(xpaths) {
 				}   
 			}   
 			if(results.length > 0) {
-				chrome.runtime.sendMessage({numOfBlockers: results.length}, function(){});
-				console.log("Hide nodes because of " + xpath + ": \n")
+				numOfResults += results.length;
+				console.log("Hide " + results.length + " node" + (results.length > 1 ? "s" : "") + " because of " + xpath + ": \n")
 				for(let hiddenNode of results) {
 					hiddenNode.style.visibility = "hidden";
 					hiddenNode.style.margin = 0;
@@ -48,6 +51,7 @@ var hideMatchingPatterns = function(xpaths) {
 		}
 	}
 	deleteChildren();
+	return numOfResults;
 }
 
 // Delete all children of hidden nodes
@@ -59,8 +63,6 @@ var deleteChildren = function() {
 			var hiddenNode = allHiddenNodeList.snapshotItem(i);
 			// Remove all chidren of hidden nodes
 			if(hiddenNode != null && hiddenNode.children.length > 0) {
-				console.log("Chidren of this node will be removed:");
-				console.log(hiddenNode);
 				for(let removedChild of hiddenNode.children) {
 					hiddenNode.removeChild(removedChild);
 				}
@@ -70,6 +72,7 @@ var deleteChildren = function() {
 }
 
 // Returns answer id based on selection text
+// Refresh filtering criterias if forceUpdate is true
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	var responsePayload = {}; 
 	if(request.selectionText != null) {
@@ -99,31 +102,36 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 			}
 		}
 	}
+	if(request.forceUpdate !== undefined && request.forceUpdate === true) {
+		updateFilter();
+	}
 	sendResponse(responsePayload);
 });
 
 // Periodically loop over all hidden nodes and delete their child nodes
 // Periodically delete all matching nodes
-var intervalID = setInterval(function() {
-	removeMatchingPatterns(patternsToBeRemoved);
-	hideMatchingPatterns(patternsToBeHidden);
-	deleteChildren();
-}, 100);
+var intervalID = null;
 
-var blockFunc = function() {
+// Update filtering criteria and start/stop running ads blocker
+var updateFilter = function() {
 	chrome.runtime.sendMessage({getAdBlockerDisabled: true}, function(response){
 		if(response == null) {
 			console.log("Extension plugin error: response not received from background.js");
 			return;
 		}
+		var removedXPaths = response.removedXPaths;
+		var hiddenXPaths = response.hiddenXPaths;
 		if(!response.AdBlockerDisabled) {
-			if(intervalID === null) {
-				intervalID = setInterval(function() {
-					removeMatchingPatterns(patternsToBeRemoved);
-					hideMatchingPatterns(patternsToBeHidden);
-					deleteChildren();
-				}, 100);
+			if(intervalID !== null) {
+				clearInterval(intervalID);
 			}
+			intervalID = setInterval(function() {
+				var numOfResults = removeMatchingPatterns(removedXPaths);
+				numOfResults += hideMatchingPatterns(hiddenXPaths);
+				if(numOfResults > 0) {
+					chrome.runtime.sendMessage({numOfBlockers: numOfResults}, function(){});
+				}
+			}, 100);
 		}
 		else {
 			if(intervalID !== null) {
@@ -133,3 +141,6 @@ var blockFunc = function() {
 		}
 	}); 
 };
+
+// Start running ads blocker
+updateFilter();

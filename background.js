@@ -18,13 +18,16 @@ var disabledBadgeText = function() {
 	chrome.browserAction.setBadgeText({text: "OFF"});
 }
 
+// Message handlers
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	var tabId = sender.tab.id;
 	var responsePayload = {};
-	if(request.getAdBlockerDisabled != null) {
+	if(request.getAdBlockerDisabled !== undefined) {
 		responsePayload["AdBlockerDisabled"] = disabled;
+		responsePayload["removedXPaths"] = removedXPaths;
+		responsePayload["hiddenXPaths"] = customizedHiddenXPaths;
 	}
-	if(!disabled && request.numOfBlockers != null) {
+	if(!disabled && request.numOfBlockers != undefined) {
 		if(!blockCount.hasOwnProperty(tabId)) {
 			blockCount[tabId] = 0;
 		}
@@ -49,10 +52,13 @@ chrome.browserAction.onClicked.addListener(function() {
 	if(disabled) {
 		removeBadgeText();
 		disabled = false;
+		forceUpdateAllTabs();
+		updateCountForCurrentTab();
 	}
 	else {
 		disabledBadgeText();
 		disabled = true;
+		forceUpdateAllTabs();
 	}
 });
 
@@ -166,13 +172,42 @@ var removeMenuItems = function() {
 	}
 }
 
-var uponRevisitOrRefresh = function(tab, refresh) {
-	// Lands on zhihu.com
+var customizedHiddenXPaths = hiddenXPaths.concat(orgPostsXPaths);
+
+chrome.contextMenus.create({
+	type: "checkbox",
+	checked: true,
+	title: "Block posts from certified org accounts",
+	contexts: ["browser_action"],
+	onclick: function(info, tab) {
+		var isChecked = info.checked;
+		// Block org posts
+		if(isChecked) {
+			customizedHiddenXPaths = hiddenXPaths.concat(orgPostsXPaths);
+		}
+		else {
+			customizedHiddenXPaths = hiddenXPaths;
+		}
+		forceUpdateAllTabs();
+	}
+});
+
+// Force all zhihu.com tabs to query background.js
+var forceUpdateAllTabs = function() {
+	chrome.tabs.query({}, function(tabs) {
+		for(let tab of tabs) {
+			if(tab.url !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
+				chrome.tabs.sendMessage(tab.id, {forceUpdate: true}, function(response) {});
+			}
+		}
+	});
+}
+
+// Display number of blocks for the given tab
+// Enable/disable right click menu items
+var uponRevisit = function(tab) {
 	if(tab.url !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
 		if(!disabled) {
-			if(!blockCount.hasOwnProperty(tab.id) || refresh) {
-				blockCount[tab.id] = 0;
-			}
 			setBadgeText(blockCount[tab.id]);
 			if(!blockUserMenuItemID) {
 				blockUserMenuItemID = chrome.contextMenus.create({
@@ -200,14 +235,18 @@ var uponRevisitOrRefresh = function(tab, refresh) {
 	}
 }
 
-chrome.tabs.onActivated.addListener(function(activeInfo) {
+var updateCountForCurrentTab = function() {
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
 		if(tabs.length != 1) {
 			return;
 		}
 		var tab = tabs[0];
-		uponRevisitOrRefresh(tab, false);
+		uponRevisit(tab);
 	});
+}
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+	updateCountForCurrentTab();
 });
 
 // Remove binding block counts
@@ -217,13 +256,17 @@ chrome.tabs.onRemoved.addListener(function(tabId) {
 
 // URL change / Refresh detected. Flush the blocking count.
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
-		if(tabs.length != 1) {
-			return;
-		}
-		var current_tab = tabs[0];
-		if(current_tab.id === tabId) {
-			uponRevisitOrRefresh(tab, true);
-		}
-	});
+	// Block count is cleared when loading
+	if(changeInfo.status !== undefined && changeInfo.status === "loading") {
+		chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+			if(tabs.length != 1) {
+				return;
+			}
+			blockCount[tab.id] = 0;
+			var current_tab = tabs[0];
+			if(current_tab.id === tabId) {
+				uponRevisit(tab);
+			}
+		});
+	}
 });
