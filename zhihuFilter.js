@@ -3,9 +3,11 @@ var removedXPaths = [
 	// Delete LIVE ads in the right column
 	"//div[contains(@class, 'RelatedLives-title')]/parent::div",
 	"//div[contains(@data-za-detail-view-path-module_name, '私家课 · Live 推荐')]",
-	// Delete right column ads
+	// Delete right column ads on timeline
 	"//div[@data-za-module='ExternalAdItem']",
-	"//div[@data-za-detail-view-path-module='ExternalAdItem']"
+	"//div[@data-za-detail-view-path-module='ExternalAdItem']",
+	// Delete right column ads on explore page
+	"//div[@class='shameimaru-section']"
 ];
 // All patterns, in this category, should be referring to div[@class='Card TopstoryItem'] web elements
 var hiddenXPaths = [
