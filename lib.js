@@ -73,6 +73,7 @@ var deleteChildren = function() {
 
 // Returns answer id based on selection text
 // Refresh filtering criterias if forceUpdate is true
+// Get blocked user id
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	var responsePayload = {}; 
 	if(request.selectionText != null) {
@@ -105,12 +106,22 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	if(request.forceUpdate !== undefined && request.forceUpdate === true) {
 		updateFilter();
 	}
+	if(request.blockUserId !== undefined) {
+		if(request.failToBlock !== undefined) {
+			displayErrorBannerForBlockUser(request.blockUserId);
+		}
+		else {
+			displayBannerForBlockUser(request.blockUserId);
+		}
+	}
 	sendResponse(responsePayload);
 });
 
 // Periodically loop over all hidden nodes and delete their child nodes
 // Periodically delete all matching nodes
+// Periodically animate banner when prompted
 var intervalID = null;
+var animationIntervalID = null;
 
 // Update filtering criteria and start/stop running ads blocker
 var updateFilter = function() {
@@ -140,7 +151,126 @@ var updateFilter = function() {
 			}
 		}
 	}); 
-};
+}
 
 // Start running ads blocker
 updateFilter();
+
+// Create banner web element
+var createBanner = function(text) {
+	banner = document.createElement('div');
+	banner.className += "blockNotificationBanner";
+	banner.setAttribute("position", "0");
+	banner.appendChild(document.createTextNode(text));
+	document.body.prepend(banner);
+	banner.addEventListener('click', function() {
+		if(withdrawTimeoutID !== null) {
+			clearTimeout(withdrawTimeoutID);
+			withdrawTimeoutID = null;
+		}
+		waitAndExecute(function() {
+			withdrawBanner(function() {});
+		});
+	});
+}
+
+var banner = null;
+var isBannerDeployed = false;
+var withdrawTimeoutID = null;
+
+var updateBanner = function(text) {
+	if(isBannerDeployed && banner !== null) {
+		banner.innerText = text;
+	}
+}
+
+var removeBanner = function() {
+	banner.remove();
+}
+
+// Display/Update banner text, then execute callback
+var displayBanner = function(text, callback) {
+	waitAndExecute(function() {
+		if(isBannerDeployed) {
+			updateBanner(text);
+			callback();
+			return;
+		}
+		
+		createBanner(text);
+		animationIntervalID = setInterval(function() {
+			var pos = Number(banner.getAttribute("position"));
+			if (pos >= 50) {
+				clearInterval(animationIntervalID);
+				animationIntervalID = null;
+				isBannerDeployed = true;
+				callback();
+			} else {
+				pos += 0.5; 
+				banner.setAttribute("position", pos);
+				banner.style.top = pos + 'px'; 
+			}
+		}, 5);
+	});
+}
+
+// Remove banner, then execute callback
+var withdrawBanner = function(callback) {
+	waitAndExecute(function() {
+		if(!isBannerDeployed) {
+			callback();
+			return;
+		}
+
+		animationIntervalID = setInterval(function() {
+			var pos = Number(banner.getAttribute("position"));
+			if (pos <= 0) {
+				clearInterval(animationIntervalID);
+				animationIntervalID = null;
+				isBannerDeployed = false;
+				removeBanner();
+				callback();
+			} else {
+				pos -= 0.5; 
+				banner.setAttribute("position", pos);
+				banner.style.top = pos + 'px'; 
+			}
+		}, 5);
+	});
+}
+
+// Wait until banner is no longer moving before execute
+var waitAndExecute = function(callback) {
+	var intervalId = setInterval(function() {
+		if(animationIntervalID === null) {
+			clearInterval(intervalId);
+			callback();
+		}
+	}, 100);
+}
+
+var displayErrorBannerForBlockUser = function(blockUserId) {
+	displayBanner("Error: block request has failed for user " + blockUserId, function() {
+		if(withdrawTimeoutID !== null) {
+			clearTimeout(withdrawTimeoutID);
+			withdrawTimeoutID = null;
+		}
+		withdrawTimeoutID = setTimeout(function() {
+			withdrawTimeoutID = null;
+			withdrawBanner(function() {});
+		}, 4000);
+	});
+}
+
+var displayBannerForBlockUser = function(blockUserId) {
+	displayBanner("User has been successfully blocked: " + blockUserId, function() {
+		if(withdrawTimeoutID !== null) {
+			clearTimeout(withdrawTimeoutID);
+			withdrawTimeoutID = null;
+		}
+		withdrawTimeoutID = setTimeout(function() {
+			withdrawTimeoutID = null;
+			withdrawBanner(function() {});
+		}, 4000);
+	});
+}

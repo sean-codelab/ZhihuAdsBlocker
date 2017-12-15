@@ -9,8 +9,8 @@ Filter out EBook recommendations.<br/>
 Remove right column ads.<br/>
 One-click user blocker.<br/>
 One-click voters blocker.<br/>
+Pop-up banner for the result of blocking user/voters.<br/>
 <br/>
-TODO: Shows banner for the result of blocking user/voters.<br/>
 <br/>
 Instructions:<br/>
 Comment/remove XPath patterns in zhihuFilter.js to stop blocking corresponding web elements.<br/>

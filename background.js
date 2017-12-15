@@ -89,6 +89,9 @@ var blockUser = function(info) {
 var blockUserID = function(userId, retry) {
 	if(retry <= 0) {
 		console.log("ERROR: Running out of retry attempts.");
+		chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+			chrome.tabs.sendMessage(tabs[0].id, {failToBlock: true, blockUserId: userId}, function(response) {});
+		});
 		return;
 	}
 	var blockRequest = new XMLHttpRequest();
@@ -96,6 +99,9 @@ var blockUserID = function(userId, retry) {
 		if (blockRequest.readyState == XMLHttpRequest.DONE) {
 			if(blockRequest.status == 204) {
 				console.log("Blocking succeeded.");
+				chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+					chrome.tabs.sendMessage(tabs[0].id, {blockUserId: userId}, function(response) {});
+				});
 			}
 			else {
 				console.log("ERROR: Blocking failed!\nRetry " + (retry - 1) + " more times.");
@@ -109,7 +115,7 @@ var blockUserID = function(userId, retry) {
 
 // Collect user IDs that has voted for the given answer ID
 // The GET response has a limit of 20 user IDs
-var getVoters = function(offset, answerId, isAnswer) {
+var getAndBlockVoters = function(offset, answerId, isAnswer) {
 	var url = "https://www.zhihu.com/api/v4/answers/" + answerId + "/voters?limit=20&offset=" + offset
 	var url_article = "https://www.zhihu.com/api/v4/articles/" + answerId + "/likers?limit=20&offset=" + offset
 
@@ -148,7 +154,7 @@ var blockVoters = function(info) {
 			console.log("AnswerId: " + response.answerId + "; UpvoteCount: " + response.upvoteCount);
 			offset = 0;
 			while(offset < response.upvoteCount) {
-				getVoters(offset, response.answerId, response.isAnswer);
+				getAndBlockVoters(offset, response.answerId, response.isAnswer);
 				offset += 20;
 			}
 		});
