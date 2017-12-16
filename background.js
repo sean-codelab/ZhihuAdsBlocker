@@ -236,11 +236,22 @@ chrome.contextMenus.create({
 	}
 });
 
+var isValidZhihuUrl = function(url) {
+	if(url !== undefined && url.startsWith("https://")) {
+		url = url.substring(8);
+		urlSplit = url.split('.');
+		if(urlSplit.length >= 3 && (urlSplit[1] === "zhihu" && urlSplit[2].startsWith("com/"))) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Force all zhihu.com tabs to query background.js
 var forceUpdateAllTabs = function() {
 	chrome.tabs.query({}, function(tabs) {
 		for(let tab of tabs) {
-			if(tab.url !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
+			if(isValidZhihuUrl(tab.url)) {
 				chrome.tabs.sendMessage(tab.id, {forceUpdate: true}, function(response) {});
 			}
 		}
@@ -250,7 +261,7 @@ var forceUpdateAllTabs = function() {
 // Display number of blocks for the given tab
 // Enable/disable right click menu items
 var uponRevisit = function(tab) {
-	if(tab.url !== undefined && (tab.url.startsWith("https://www.zhihu.com/"))) {
+	if(isValidZhihuUrl(tab.url)) {
 		if(!disabled) {
 			setBadgeText(blockCount[tab.id]);
 			if(!blockUserMenuItemID) {

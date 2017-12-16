@@ -20,7 +20,7 @@
 	"content_scripts": [
 		{
 			"matches": [
-				"https://www.zhihu.com/*"
+				"https://*.zhihu.com/*"
 			],
 			"css": [
 				"zhihuBlockerStyles.css"

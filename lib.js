@@ -99,7 +99,17 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 				responsePayload['isAnswer'] = false;
 			}
 			else {
-				console.log("ERROR: More than one answer or no answer is found.");
+				var xpath_column = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[contains(@class, 'Layout-main')]/div[@data-zop]";
+				var columnList = document.evaluate(xpath_column, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+				if(columnList != null && columnList.snapshotLength === 1) {
+					var articleItem = JSON.parse(columnList.snapshotItem(0).getAttribute('data-zop'));
+					var articleId = articleItem.itemId;
+					responsePayload['answerId'] = articleId;
+					responsePayload['isAnswer'] = false;
+				}
+				else {
+					console.log("ERROR: More than one answer or no answer is found.");
+				}
 			}
 		}
 	}
