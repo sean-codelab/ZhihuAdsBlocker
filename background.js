@@ -113,9 +113,16 @@ var blockUserID = function(userId, retry) {
 	blockRequest.send(null);
 }
 
+// When upvote count is not available, we need to fetch 20 voters every time until it runs out of results
+// Guarantee the sequential execution of voter fetch
+var fetchMoreVoters = true;
+// When results are running out, fetch is over
+var fetchIsOver = false;
+
 // Collect user IDs that has voted for the given answer ID
 // The GET response has a limit of 20 user IDs
 var getAndBlockVoters = function(offset, answerId, isAnswer) {
+	fetchMoreVoters = false;
 	var url = "https://www.zhihu.com/api/v4/answers/" + answerId + "/voters?limit=20&offset=" + offset
 	var url_article = "https://www.zhihu.com/api/v4/articles/" + answerId + "/likers?limit=20&offset=" + offset
 
@@ -124,6 +131,10 @@ var getAndBlockVoters = function(offset, answerId, isAnswer) {
 		if (blockRequest.readyState == XMLHttpRequest.DONE) {
 			var voters = JSON.parse(blockRequest.responseText);
 			voters = voters.data;
+			if(voters.length < 20) {
+				console.log("Stop fetching more voters.");
+				fetchIsOver = true;
+			}
 			for(let voter of voters) {
 				var peopleId = voter.url_token;
 				// Skip anonymous users
@@ -132,10 +143,24 @@ var getAndBlockVoters = function(offset, answerId, isAnswer) {
 					blockUserID(peopleId, 3);
 				}
 			}
+			fetchMoreVoters = true;
 		}
 	};
 	blockRequest.open("GET", isAnswer? url : url_article, true);
 	blockRequest.send(null);
+}
+
+// Inefficient way to fetch voters for scenarios when vote count is missing
+var loopExecute = function(funcCall) {
+	var intervalId = setInterval(function() {
+        if(fetchIsOver === true) {
+            clearInterval(intervalId);
+			fetchIsOver = false;
+        }
+		else if(fetchMoreVoters === true) {
+			funcCall();
+		}
+    }, 100);
 }
 
 // Block the voters of a given answer
@@ -148,14 +173,27 @@ var blockVoters = function(info) {
 	// Let current active tab to look for answer ID
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		chrome.tabs.sendMessage(tabs[0].id, {selectionText: selection}, function(response) {
-			if(response.answerId === undefined || response.upvoteCount === undefined) {
+			if(response.answerId === undefined) {
 				console.log("Frontend failed to give back answer ID or upvote count.");
 			}
-			console.log("AnswerId: " + response.answerId + "; UpvoteCount: " + response.upvoteCount);
-			offset = 0;
-			while(offset < response.upvoteCount) {
-				getAndBlockVoters(offset, response.answerId, response.isAnswer);
-				offset += 20;
+			else {
+				if(response.upvoteCount === undefined) {
+					console.log("AnswerId: " + response.answerId);
+					offset = 0;
+					loopExecute(function() {
+						console.log("Current offset: " + offset);
+						getAndBlockVoters(offset, response.answerId, response.isAnswer);
+						offset += 20;
+					});
+				}
+				else {
+					console.log("AnswerId: " + response.answerId + "; UpvoteCount: " + response.upvoteCount);
+					offset = 0;
+					while(offset < response.upvoteCount) {
+						getAndBlockVoters(offset, response.answerId, response.isAnswer);
+						offset += 20;
+					}
+				}
 			}
 		});
 	});
