@@ -210,7 +210,7 @@ var displayBanner = function(text, callback) {
 		createBanner(text);
 		animationIntervalID = setInterval(function() {
 			var pos = Number(banner.getAttribute("position"));
-			if (pos >= 50) {
+			if(pos >= 50) {
 				clearInterval(animationIntervalID);
 				animationIntervalID = null;
 				isBannerDeployed = true;
@@ -234,7 +234,7 @@ var withdrawBanner = function(callback) {
 
 		animationIntervalID = setInterval(function() {
 			var pos = Number(banner.getAttribute("position"));
-			if (pos <= 0) {
+			if(pos <= 0) {
 				clearInterval(animationIntervalID);
 				animationIntervalID = null;
 				isBannerDeployed = false;

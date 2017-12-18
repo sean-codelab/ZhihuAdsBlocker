@@ -30,3 +30,5 @@ var orgPostsXPaths = [
 	"//a[contains(@data-tooltip, '已认证的官方帐号')]/ancestor::div[@class='Card TopstoryItem']",
 	"//a[contains(@data-tooltip, '已认证的官方帐号')]/ancestor::div[@class='List-item']"
 ];
+// Collection of blocked answers/articles. THIS IS PERSONAL.
+var collectionId = 207389298;

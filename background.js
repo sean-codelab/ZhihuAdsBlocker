@@ -96,7 +96,7 @@ var blockUserID = function(userId, retry) {
 	}
 	var blockRequest = new XMLHttpRequest();
 	blockRequest.onreadystatechange = function(result) {
-		if (blockRequest.readyState == XMLHttpRequest.DONE) {
+		if(blockRequest.readyState == XMLHttpRequest.DONE) {
 			if(blockRequest.status == 204) {
 				console.log("Blocking succeeded.");
 				chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
@@ -119,16 +119,39 @@ var fetchMoreVoters = true;
 // When results are running out, fetch is over
 var fetchIsOver = false;
 
+// Add this answer to my collection for tracking
+var addToFavList = function(answerId, isAnswer) {
+	var url_add_to_favList = "https://www.zhihu.com/api/v4/favlists/" + collectionId + "/items";
+	var addRequest = new XMLHttpRequest();
+	addRequest.onreadystatechange = function(result) {
+		if(addRequest.readyState === XMLHttpRequest.DONE) {
+			if(addRequest.status === 200) {
+				// Pass
+			}
+			else {
+				console.log("Error: fail to add to favList.");
+				console.log(result);
+			}
+		}
+	};
+	addRequest.open("POST", url_add_to_favList, true);
+	addRequest.send(JSON.stringify({
+		"content_id": answerId,
+		"content_type": isAnswer ? "answer" : "article"
+	}));
+}
+
 // Collect user IDs that has voted for the given answer ID
 // The GET response has a limit of 20 user IDs
 var getAndBlockVoters = function(offset, answerId, isAnswer) {
+
 	fetchMoreVoters = false;
-	var url = "https://www.zhihu.com/api/v4/answers/" + answerId + "/voters?limit=20&offset=" + offset
-	var url_article = "https://www.zhihu.com/api/v4/articles/" + answerId + "/likers?limit=20&offset=" + offset
+	var url = "https://www.zhihu.com/api/v4/answers/" + answerId + "/voters?limit=20&offset=" + offset;
+	var url_article = "https://www.zhihu.com/api/v4/articles/" + answerId + "/likers?limit=20&offset=" + offset;
 
 	var blockRequest = new XMLHttpRequest();
 	blockRequest.onreadystatechange = function(result) {
-		if (blockRequest.readyState == XMLHttpRequest.DONE) {
+		if(blockRequest.readyState === XMLHttpRequest.DONE) {
 			var voters = JSON.parse(blockRequest.responseText);
 			voters = voters.data;
 			if(voters.length < 20) {
@@ -187,6 +210,7 @@ var blockVoters = function(info) {
 				console.log("Frontend failed to give back answer ID or upvote count.");
 			}
 			else {
+				addToFavList(response.answerId, response.isAnswer);
 				if(response.upvoteCount === undefined) {
 					console.log("AnswerId: " + response.answerId);
 					offset = 0;
