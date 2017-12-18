@@ -19,3 +19,4 @@ Number of blocked web elements are displayed on top of the plugin icon.<br/>
 Toggle the plugin icon to enable/disable plugin.<br/>
 To block a user, right click on the user's avatar and click "Block this user" item.<br/>
 To block voters of an answer, select a couple of letters/characters in a paragraph w/o any format change or line break, then right click on the user's avatar and click "Block these voters".<br/>
+If right click on a user link, both menu items will pop up. In order to disambiguate such behavior, no matter user clicks on "Block this user" or "Block these voters", it will only block the user.<br/>

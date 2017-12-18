@@ -169,6 +169,16 @@ var blockVoters = function(info) {
 		return;
 	}
 
+	// Selection text should not contain link
+	// If there's valid linkUrl, it is likely that user was right clicking a link, which brings up two menu items
+	// In this case, if user clicks "Block these voters", he's more likely to block a user, not a group of voters
+	// Therefore, it redirects to blockUser()
+	if(info.linkUrl !== undefined) {
+		console.log(info.linkUrl);
+		blockUser(info);
+		return;
+	}
+
 	selection = info.selectionText;
 	// Let current active tab to look for answer ID
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
