@@ -77,8 +77,8 @@ var deleteChildren = function() {
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	var responsePayload = {}; 
 	if(request.selectionText != null) {
-		var xpath_answer = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[contains(@class, 'AnswerItem')]";
-		var xpath_upvote_count = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[contains(@class, 'AnswerItem')]//meta[@itemprop='upvoteCount']";
+		var xpath_answer = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[@class='ContentItem AnswerItem']";
+		var xpath_upvote_count = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[@class='ContentItem AnswerItem']//meta[@itemprop='upvoteCount']";
 		var answerList = document.evaluate(xpath_answer, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 		if(answerList != null && answerList.snapshotLength === 1) {
 			var answerItem = answerList.snapshotItem(0).getAttribute('name');

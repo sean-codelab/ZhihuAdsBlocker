@@ -18,6 +18,26 @@ var disabledBadgeText = function() {
 	chrome.browserAction.setBadgeText({text: "OFF"});
 }
 
+var customizedHiddenXPaths = hiddenXPaths.concat(orgPostsXPaths);
+
+chrome.contextMenus.create({
+	type: "checkbox",
+	checked: true,
+	title: "Block posts from certified org accounts",
+	contexts: ["browser_action"],
+	onclick: function(info, tab) {
+		var isChecked = info.checked;
+		// Block org posts
+		if(isChecked) {
+			customizedHiddenXPaths = hiddenXPaths.concat(orgPostsXPaths);
+		}
+		else {
+			customizedHiddenXPaths = hiddenXPaths;
+		}
+		forceUpdateAllTabs();
+	}
+});
+
 // Message handlers
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	var tabId = sender.tab.id;
@@ -120,12 +140,15 @@ var blockUserID = function(userId, retry) {
 
 // When upvote count is not available, we need to fetch 20 voters every time until it runs out of results
 // Guarantee the sequential execution of voter fetch
-var fetchMoreVoters = true;
+var fetchMoreVoters = {};
 // When results are running out, fetch is over
-var fetchIsOver = false;
+var fetchIsOver = {};
 
 // Add this answer to my collection for tracking
 var addToFavList = function(answerId, isAnswer) {
+	if(collectionId === undefined) {
+		return;
+	}
 	var url_add_to_favList = "https://www.zhihu.com/api/v4/favlists/" + collectionId + "/items";
 	var addRequest = new XMLHttpRequest();
 	addRequest.onreadystatechange = function(result) {
@@ -151,7 +174,7 @@ var addToFavList = function(answerId, isAnswer) {
 var getAndBlockVoters = function(offset, answerId, isAnswer) {
 	console.log("Current offset is " + offset);
 
-	fetchMoreVoters = false;
+	fetchMoreVoters[answerId] = false;
 	var url = "https://www.zhihu.com/api/v4/answers/" + answerId + "/voters?limit=20&offset=" + offset;
 	var url_article = "https://www.zhihu.com/api/v4/articles/" + answerId + "/likers?limit=20&offset=" + offset;
 
@@ -162,7 +185,7 @@ var getAndBlockVoters = function(offset, answerId, isAnswer) {
 			voters = voters.data;
 			if(voters.length < 20) {
 				console.log("Stop fetching more voters.");
-				fetchIsOver = true;
+				fetchIsOver[answerId] = true;
 			}
 			for(let voter of voters) {
 				var peopleId = voter.url_token;
@@ -172,7 +195,7 @@ var getAndBlockVoters = function(offset, answerId, isAnswer) {
 					blockUserID(peopleId, 3);
 				}
 			}
-			fetchMoreVoters = true;
+			fetchMoreVoters[answerId] = true;
 		}
 	};
 	blockRequest.open("GET", isAnswer? url : url_article, true);
@@ -180,13 +203,14 @@ var getAndBlockVoters = function(offset, answerId, isAnswer) {
 }
 
 // Inefficient way to fetch voters for scenarios when vote count is missing
-var loopExecute = function(funcCall) {
+var loopExecute = function(funcCall, answerId) {
 	var intervalId = setInterval(function() {
-		if(fetchIsOver === true) {
+		if(fetchIsOver[answerId] === true) {
 			clearInterval(intervalId);
-			fetchIsOver = false;
+			delete fetchMoreVoters[answerId];
+			delete fetchIsOver[answerId];
 		}
-		else if(fetchMoreVoters === true) {
+		else if(fetchMoreVoters[answerId] === true) {
 			funcCall();
 		}
 	}, 100);
@@ -220,10 +244,12 @@ var blockVoters = function(info) {
 				if(response.upvoteCount === undefined) {
 					console.log("AnswerId: " + response.answerId);
 					offset = 0;
+					fetchMoreVoters[response.answerId] = true;
+					fetchIsOver[response.answerId] = false;
 					loopExecute(function() {
 						getAndBlockVoters(offset, response.answerId, response.isAnswer);
 						offset += 20;
-					});
+					}, response.answerId);
 				}
 				else {
 					console.log("AnswerId: " + response.answerId + "; UpvoteCount: " + response.upvoteCount);
@@ -254,26 +280,6 @@ var removeMenuItems = function() {
 		blockVotersMenuItemID = undefined;
 	}
 }
-
-var customizedHiddenXPaths = hiddenXPaths.concat(orgPostsXPaths);
-
-chrome.contextMenus.create({
-	type: "checkbox",
-	checked: true,
-	title: "Block posts from certified org accounts",
-	contexts: ["browser_action"],
-	onclick: function(info, tab) {
-		var isChecked = info.checked;
-		// Block org posts
-		if(isChecked) {
-			customizedHiddenXPaths = hiddenXPaths.concat(orgPostsXPaths);
-		}
-		else {
-			customizedHiddenXPaths = hiddenXPaths;
-		}
-		forceUpdateAllTabs();
-	}
-});
 
 var isValidZhihuUrl = function(url) {
 	if(url !== undefined && url.startsWith("https://")) {
