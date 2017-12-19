@@ -94,23 +94,28 @@ var blockUserID = function(userId, retry) {
 		});
 		return;
 	}
-	var blockRequest = new XMLHttpRequest();
-	blockRequest.onreadystatechange = function(result) {
-		if(blockRequest.readyState == XMLHttpRequest.DONE) {
-			if(blockRequest.status == 204) {
-				console.log("Blocking succeeded.");
-				chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
-					chrome.tabs.sendMessage(tabs[0].id, {blockUserId: userId}, function(response) {});
-				});
+
+	processBlackList(userId, function() {
+		var blockRequest = new XMLHttpRequest();
+		blockRequest.onreadystatechange = function(result) {
+			if(blockRequest.readyState == XMLHttpRequest.DONE) {
+				if(blockRequest.status == 204) {
+					console.log("Blocking succeeded.");
+					chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+						if(typeof(tabs) !== 'undefined' && tabs[0] !== undefined && tabs[0].id !== undefined) {
+							chrome.tabs.sendMessage(tabs[0].id, {blockUserId: userId}, function(response) {});
+						}
+					});
+				}
+				else {
+					console.log("ERROR: Blocking failed!\nRetry " + (retry - 1) + " more times.");
+					blockUserID(userId, retry - 1);
+				}
 			}
-			else {
-				console.log("ERROR: Blocking failed!\nRetry " + (retry - 1) + " more times.");
-				blockUserID(userId, retry - 1);
-			}
-		}
-	};
-	blockRequest.open("POST", "https://www.zhihu.com/api/v4/members/" + userId + "/actions/block", true);
-	blockRequest.send(null);
+		};
+		blockRequest.open("POST", "https://www.zhihu.com/api/v4/members/" + userId + "/actions/block", true);
+		blockRequest.send(null);
+	});
 }
 
 // When upvote count is not available, we need to fetch 20 voters every time until it runs out of results
@@ -144,6 +149,7 @@ var addToFavList = function(answerId, isAnswer) {
 // Collect user IDs that has voted for the given answer ID
 // The GET response has a limit of 20 user IDs
 var getAndBlockVoters = function(offset, answerId, isAnswer) {
+	console.log("Current offset is " + offset);
 
 	fetchMoreVoters = false;
 	var url = "https://www.zhihu.com/api/v4/answers/" + answerId + "/voters?limit=20&offset=" + offset;
@@ -176,14 +182,14 @@ var getAndBlockVoters = function(offset, answerId, isAnswer) {
 // Inefficient way to fetch voters for scenarios when vote count is missing
 var loopExecute = function(funcCall) {
 	var intervalId = setInterval(function() {
-        if(fetchIsOver === true) {
-            clearInterval(intervalId);
+		if(fetchIsOver === true) {
+			clearInterval(intervalId);
 			fetchIsOver = false;
-        }
+		}
 		else if(fetchMoreVoters === true) {
 			funcCall();
 		}
-    }, 100);
+	}, 100);
 }
 
 // Block the voters of a given answer
@@ -215,7 +221,6 @@ var blockVoters = function(info) {
 					console.log("AnswerId: " + response.answerId);
 					offset = 0;
 					loopExecute(function() {
-						console.log("Current offset: " + offset);
 						getAndBlockVoters(offset, response.answerId, response.isAnswer);
 						offset += 20;
 					});
@@ -289,6 +294,33 @@ var forceUpdateAllTabs = function() {
 				chrome.tabs.sendMessage(tab.id, {forceUpdate: true}, function(response) {});
 			}
 		}
+	});
+}
+
+var clearBlackList = function() {
+	chrome.storage.local.clear(function() {
+		console.log("Offline blacklist has been cleared.");
+	});
+}
+
+var processBlackList = function(userId, callback) {
+	chrome.storage.local.get(userId, function(items) {
+		// userId is not found
+		if(Object.keys(items).length === 0) {
+			console.log(userId + " is going to be pushed to offline blacklist.");
+			pushToBlackList(userId, callback);
+		}
+		else {
+			console.log(userId + " is already in offline blacklist.");
+		}
+	});
+}
+
+var pushToBlackList = function(userId, callback) {
+	var pair = {}
+	pair[userId] = true;
+	chrome.storage.local.set(pair, function() {
+		callback();
 	});
 }
 

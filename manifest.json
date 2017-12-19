@@ -6,6 +6,7 @@
 		"webRequest",
 		"tabs",
 		"contextMenus",
+		"storage",
 		"*://*.zhihu.com/"
 	],
 	"icons": {
