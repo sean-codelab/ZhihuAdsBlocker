@@ -77,6 +77,7 @@ chrome.browserAction.onClicked.addListener(function() {
 	}
 	else {
 		disabledBadgeText();
+		removeMenuItems();
 		disabled = true;
 		forceUpdateAllTabs();
 	}
