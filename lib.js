@@ -152,7 +152,7 @@ var updateFilter = function() {
 				if(numOfResults > 0) {
 					chrome.runtime.sendMessage({numOfBlockers: numOfResults}, function(){});
 				}
-			}, 100);
+			}, 50);
 		}
 		else {
 			if(intervalID !== null) {

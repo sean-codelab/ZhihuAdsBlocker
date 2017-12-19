@@ -7,7 +7,9 @@ var removedXPaths = [
 	"//div[@data-za-module='ExternalAdItem']",
 	"//div[@data-za-detail-view-path-module='ExternalAdItem']",
 	// Delete right column ads on explore page
-	"//div[@class='shameimaru-section']"
+	"//div[@class='shameimaru-section']",
+	// Delete bottom QRCode promotion banner
+	"//div[@class='HitQrcode']/parent::span"
 ];
 // All patterns, in this category, should be referring to div[@class='Card TopstoryItem'] web elements
 var hiddenXPaths = [
