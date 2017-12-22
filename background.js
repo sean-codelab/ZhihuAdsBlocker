@@ -1,5 +1,6 @@
 var disabled = false;
 var blockCount = {};
+var debuggingMode = false;
 
 var removeBadgeText = function() {
 	chrome.browserAction.setBadgeText({text: ""});
@@ -117,6 +118,9 @@ var blockUserID = function(userId, retry) {
 	}
 
 	processBlackList(userId, function() {
+		if(debuggingMode) {
+			return;
+		}
 		var blockRequest = new XMLHttpRequest();
 		blockRequest.onreadystatechange = function(result) {
 			if(blockRequest.readyState == XMLHttpRequest.DONE) {
@@ -147,7 +151,7 @@ var fetchIsOver = {};
 
 // Add this answer to my collection for tracking
 var addToFavList = function(answerId, isAnswer) {
-	if(collectionId === undefined) {
+	if(debuggingMode || collectionId === undefined) {
 		return;
 	}
 	var url_add_to_favList = "https://www.zhihu.com/api/v4/favlists/" + collectionId + "/items";
@@ -237,7 +241,7 @@ var blockVoters = function(info) {
 	// Let current active tab to look for answer ID
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		chrome.tabs.sendMessage(tabs[0].id, {selectionText: selection}, function(response) {
-			if(response.answerId === undefined) {
+			if(typeof(response) === "undefined" || response.answerId === undefined) {
 				console.log("Frontend failed to give back answer ID or upvote count.");
 			}
 			else {
@@ -326,6 +330,10 @@ var processBlackList = function(userId, callback) {
 var pushToBlackList = function(userId, callback) {
 	var pair = {}
 	pair[userId] = true;
+	if(debuggingMode) {
+		callback();
+		return;
+	}
 	chrome.storage.local.set(pair, function() {
 		callback();
 	});

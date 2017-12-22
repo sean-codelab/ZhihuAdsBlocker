@@ -71,47 +71,86 @@ var deleteChildren = function() {
 	}
 }
 
+// Find answerId/articleId of a piece of selected text
+var findAnswerId = function(selectionText, responsePayload) {
+	var xpath_answer = "//text()[contains(., '" + selectionText + "')]/ancestor::div[@class='ContentItem AnswerItem']";
+	var xpath_article = "//text()[contains(., '" + selectionText + "')]/ancestor::div[contains(@class, 'ArticleItem')]";
+	var xpath_column = "//text()[contains(., '" + selectionText + "')]/ancestor::div[contains(@class, 'Layout-main')]/div[@data-zop]";
+	var xpath_old_answer = "//text()[contains(., '" + selectionText + "')]/ancestor::div[@class='zm-item-answer ']";
+	var xpath_old_article = "//text()[contains(., '" + selectionText + "')]/ancestor::div[@class='zm-item-feed zm-item-post']";
+
+	var answerList = document.evaluate(xpath_answer, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+	var articleList = document.evaluate(xpath_article, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+	var columnList = document.evaluate(xpath_column, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+	var oldAnswerList = document.evaluate(xpath_old_answer, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+	var oldArticleList = document.evaluate(xpath_old_article, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+
+	var answerListLength = answerList.snapshotLength;
+	var articleListLength = articleList.snapshotLength;
+	var columnListLength = columnList.snapshotLength;
+	var oldAnswerListLength = oldAnswerList.snapshotLength;
+	var oldArticleListLength = oldArticleList.snapshotLength;
+	var overallLength = answerListLength + articleListLength + columnListLength + oldAnswerListLength + oldArticleList;
+
+	if(overallLength > 1) {
+		displayBannerMessage("Error: found more than one answerID. Please select another text area.");
+	}
+	else if(overallLength < 1) {
+		displayBannerMessage("Error: answerID not found. Do not select text area with rich text.");
+	}
+	else {
+		if(answerListLength !== 0) {
+			var answerItem = answerList.snapshotItem(0).getAttribute('name');
+			var xpath_upvote_count = "//text()[contains(., '" + selectionText + "')]/ancestor::div[@class='ContentItem AnswerItem']//meta[@itemprop='upvoteCount']";
+			var upvoteCount = document.evaluate(xpath_upvote_count, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0).getAttribute('content');
+			responsePayload['answerId'] = answerItem;
+			responsePayload['upvoteCount'] = isNaN(upvoteCount) ? undefined : upvoteCount;
+			responsePayload['isAnswer'] = true;
+		}
+		else if(articleListLength !== 0) {
+			var articleItem = JSON.parse(articleList.snapshotItem(0).getAttribute('data-za-extra-module'));
+			var articleVoteCount = articleItem.card.content.upvote_num;
+			var articleId = articleItem.card.content.token;
+			responsePayload['answerId'] = articleId;
+			responsePayload['upvoteCount'] = isNaN(upvoteCount) ? undefined : articleVoteCount;
+			responsePayload['isAnswer'] = false;
+		}
+		else if(columnListLength !== 0) {
+			var articleItem = JSON.parse(columnList.snapshotItem(0).getAttribute('data-zop'));
+			var articleId = articleItem.itemId;
+			responsePayload['answerId'] = articleId;
+			responsePayload['isAnswer'] = false;
+		}
+		else if(oldAnswerListLength !== 0) {
+			var answerItem = oldAnswerList.snapshotItem(0).getAttribute('data-atoken');
+			var xpath_upvote_count = xpath_old_answer + "/div[@class='zm-item-vote']/a[contains(@class, 'zm-item-vote-count')]";
+			var upvoteCount = document.evaluate(xpath_upvote_count, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0).innerText;
+			responsePayload['answerId'] = answerItem;
+			responsePayload['upvoteCount'] = isNaN(upvoteCount) ? undefined : upvoteCount;
+			responsePayload['isAnswer'] = true;
+		}
+		else if(oldArticleListLength !== 0) {
+			var xpath_article_id = xpath_old_article + "/meta[@itemprop='post-url-token']";
+			var articleItem = document.evaluate(xpath_article_id, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0).getAttribute('content');
+			var xpath_upvote_count = xpath_old_article + "/div[@class='zm-item-vote']/a[contains(@class, 'zm-item-vote-count')]";
+			var upvoteCount = document.evaluate(xpath_upvote_count, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0).innerText;
+			responsePayload['answerId'] = articleItem;
+			responsePayload['upvoteCount'] = isNaN(upvoteCount) ? undefined : upvoteCount;
+			responsePayload['isAnswer'] = false;
+		}
+		else {
+			// Pass
+		}
+	}
+}
+
 // Returns answer id based on selection text
 // Refresh filtering criterias if forceUpdate is true
 // Get blocked user id
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	var responsePayload = {}; 
 	if(request.selectionText != null) {
-		var xpath_answer = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[@class='ContentItem AnswerItem']";
-		var xpath_upvote_count = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[@class='ContentItem AnswerItem']//meta[@itemprop='upvoteCount']";
-		var answerList = document.evaluate(xpath_answer, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-		if(answerList != null && answerList.snapshotLength === 1) {
-			var answerItem = answerList.snapshotItem(0).getAttribute('name');
-			responsePayload['answerId'] = answerItem;
-			var upvoteCount = document.evaluate(xpath_upvote_count, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0).getAttribute('content');
-			responsePayload['upvoteCount'] = upvoteCount;
-			responsePayload['isAnswer'] = true;
-		} 
-		else {
-			var xpath_article = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[contains(@class, 'ArticleItem')]";
-			var articleList = document.evaluate(xpath_article, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-			if(articleList != null && articleList.snapshotLength === 1) {
-				var articleItem = JSON.parse(articleList.snapshotItem(0).getAttribute('data-za-extra-module'));
-				var articleVoteCount = articleItem.card.content.upvote_num;
-				var articleId = articleItem.card.content.token;
-				responsePayload['answerId'] = articleId;
-				responsePayload['upvoteCount'] = articleVoteCount;
-				responsePayload['isAnswer'] = false;
-			}
-			else {
-				var xpath_column = "//text()[contains(., '" + request.selectionText + "')]/ancestor::div[contains(@class, 'Layout-main')]/div[@data-zop]";
-				var columnList = document.evaluate(xpath_column, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-				if(columnList != null && columnList.snapshotLength === 1) {
-					var articleItem = JSON.parse(columnList.snapshotItem(0).getAttribute('data-zop'));
-					var articleId = articleItem.itemId;
-					responsePayload['answerId'] = articleId;
-					responsePayload['isAnswer'] = false;
-				}
-				else {
-					console.log("ERROR: More than one answer or no answer is found.");
-				}
-			}
-		}
+		findAnswerId(request.selectionText, responsePayload);
 	}
 	if(request.forceUpdate !== undefined && request.forceUpdate === true) {
 		updateFilter();
@@ -259,8 +298,9 @@ var waitAndExecute = function(callback) {
 	}, 100);
 }
 
-var displayErrorBannerForBlockUser = function(blockUserId) {
-	displayBanner("Error: block request has failed for user " + blockUserId, function() {
+// Display message on top banner for 4 seconds
+var displayBannerMessage = function(message) {
+	displayBanner(message, function() {
 		if(withdrawTimeoutID !== null) {
 			clearTimeout(withdrawTimeoutID);
 			withdrawTimeoutID = null;
@@ -272,15 +312,10 @@ var displayErrorBannerForBlockUser = function(blockUserId) {
 	});
 }
 
+var displayErrorBannerForBlockUser = function(blockUserId) {
+	displayBannerMessage("Error: block request has failed for user " + blockUserId);
+}
+
 var displayBannerForBlockUser = function(blockUserId) {
-	displayBanner("User has been successfully blocked: " + blockUserId, function() {
-		if(withdrawTimeoutID !== null) {
-			clearTimeout(withdrawTimeoutID);
-			withdrawTimeoutID = null;
-		}
-		withdrawTimeoutID = setTimeout(function() {
-			withdrawTimeoutID = null;
-			withdrawBanner(function() {});
-		}, 4000);
-	});
+	displayBannerMessage("User has been successfully blocked: " + blockUserId);
 }
