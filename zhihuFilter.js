@@ -17,12 +17,11 @@ var removedXPaths = [
 var hiddenXPaths = [
 	// Hide Ads cards
 	"//button[contains(@class, 'TopstoryItem-advertButton')]/ancestor::div[@class='Card TopstoryItem']",
-	// Hide LIVE participation posts
+	// Hide ALL LIVE related ads & posts
 	"//span[contains(text(), '参与了 Live')]/ancestor::div[@class='Card TopstoryItem']",
-	// Hide LIVE promotion posts
 	"//span[contains(text(), '对 Live 感兴趣')]/ancestor::div[@class='Card TopstoryItem']",
-	// Hide LIVE transaction posts
 	"//span[contains(text(), '赞助了 Live')]/ancestor::div[@class='Card TopstoryItem']",
+	"//div[@class='LiveItem']/ancestor::div[@class='Card TopstoryItem']",
 	// Hide EBook Ads cards
 	"//div[contains(@class, 'EBookItem')]/ancestor::div[@class='Card TopstoryItem']",
 	// Hide Column notices
