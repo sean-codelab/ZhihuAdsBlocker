@@ -246,7 +246,8 @@ var blockVoters = function(info) {
 			}
 			else {
 				addToFavList(response.answerId, response.isAnswer);
-				if(response.upvoteCount === undefined) {
+				// When upvoteCount is too large, blocking request needs to be sent at a slower rate
+				if(response.upvoteCount === undefined || response.upvoteCount > 1000) {
 					console.log("AnswerId: " + response.answerId);
 					offset = 0;
 					fetchMoreVoters[response.answerId] = true;

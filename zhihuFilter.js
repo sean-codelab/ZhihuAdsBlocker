@@ -25,7 +25,9 @@ var hiddenXPaths = [
 	// Hide EBook Ads cards
 	"//div[contains(@class, 'EBookItem')]/ancestor::div[@class='Card TopstoryItem']",
 	// Hide Column notices
-	"//div[@data-za-module='ColumnItem']/ancestor::div[@class='Card TopstoryItem']"
+	"//div[@data-za-module='ColumnItem']/ancestor::div[@class='Card TopstoryItem']",
+	// Hide Events
+	"//div[@data-za-detail-view-path-module='EventItem']/ancestor::div[@class='Card TopstoryItem']"
 ];
 // This category stores patterns that could be either hidden or exposed
 var orgPostsXPaths = [
