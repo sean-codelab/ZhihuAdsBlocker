@@ -263,7 +263,7 @@ var addToFavList = function(answerId, isAnswer) {
 				sendBannerMessage("Answer/article has been added to the FavList for tracking purpose.");
 			}
 			else {
-				sendBannerMessage("Error: fail to add to favList.");
+				sendBannerMessage("Error: fail to add to favList. Please remove collectionId from zhihuFilter.js.");
 			}
 		}
 	};
@@ -522,7 +522,6 @@ var addToLocal = function(userId) {
 }
 
 chrome.webRequest.onCompleted.addListener(function(details) {
-	console.log(details);
 	var url = details.url;
 	// Remove header 'https://www.zhihu.com/api/v4/members/'
 	url = url.substring(37);
@@ -539,6 +538,9 @@ chrome.webRequest.onCompleted.addListener(function(details) {
 
 // Block requests using deprecated API that will skip updating local blacklist
 chrome.webRequest.onBeforeRequest.addListener(function(details) {
+	if(disabled) {
+		return;
+	}
 	if(details.url === "https://www.zhihu.com/settings/unblockuser") {
 		sendBannerMessage("Please unblock this user from the homepage.");
 	}
