@@ -539,6 +539,9 @@ chrome.webRequest.onCompleted.addListener(function(details) {
 
 // Block requests using deprecated API that will skip updating local blacklist
 chrome.webRequest.onBeforeRequest.addListener(function(details) {
-	sendBannerMessage("Please unblock this user from the homepage.");
+	if(details.url === "https://www.zhihu.com/settings/unblockuser") {
+		sendBannerMessage("Please unblock this user from the homepage.");
+	}
 	return {cancel: true};
-}, {urls: ["https://www.zhihu.com/settings/unblockuser"]}, ["blocking"]);
+}, {urls: ["https://www.zhihu.com/settings/unblockuser",
+"https://zhihu-web-analytics.zhihu.com/*"]}, ["blocking"]);
