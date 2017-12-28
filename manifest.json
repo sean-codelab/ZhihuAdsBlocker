@@ -4,6 +4,7 @@
 	"version": "0.5",
 	"permissions": [
 		"webRequest",
+		"webRequestBlocking",
 		"tabs",
 		"contextMenus",
 		"storage",

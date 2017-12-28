@@ -147,12 +147,45 @@ var blockTopic = function(topicName, topicId, currentUrl) {
 				}
 			}
 			else {
-
+				sendBannerMessage("Error: fail to get tid.");
 			}
 		}
 	}
 	getTidRequest.open("GET", "https://www.zhihu.com/topic/autocomplete?token=" + topicName + "&max_matches=10&use_similar=0", true);
 	getTidRequest.send(null);
+}
+
+var getPeopleId = function(userName, userId, callback) {
+	var getRequest = new XMLHttpRequest();
+	getRequest.onreadystatechange = function(result) {
+		if(getRequest.readyState === XMLHttpRequest.DONE) {
+			if(getRequest.status === 200) {
+				var autoCompleteResult = JSON.parse(getRequest.responseText);
+				autoCompleteResult = autoCompleteResult[0];
+				var found = false;
+				for(let res of autoCompleteResult) {
+					if(Array.isArray(res) && res.indexOf(userId) !== -1) {
+						var peopleId = res[4];
+						if(peopleId !== undefined) {
+							callback(peopleId);
+							found = true;
+						}
+						else {
+							sendBannerMessage("Error: peopleId does not exist in the entry of given userId.");
+						}
+					}
+				}
+				if(!found) {
+					sendBannerMessage("Error: cannot find peopleId from userName and userId.");
+				}
+			}
+			else {
+				sendBannerMessage("Error: fail to get peopleId.");
+			}
+		}
+	}
+	getRequest.open("GET", "https://www.zhihu.com/autocomplete?token=" + userName + "&max_matches=10&use_similar=0");
+	getRequest.send(null);
 }
 
 // Block a specific user
@@ -503,3 +536,9 @@ chrome.webRequest.onCompleted.addListener(function(details) {
 		addToLocal(userId);
 	}
 }, {urls: ["https://www.zhihu.com/api/v4/members/*/actions/block"]});
+
+// Block requests using deprecated API that will skip updating local blacklist
+chrome.webRequest.onBeforeRequest.addListener(function(details) {
+	sendBannerMessage("Please unblock this user from the homepage.");
+	return {cancel: true};
+}, {urls: ["https://www.zhihu.com/settings/unblockuser"]}, ["blocking"]);
