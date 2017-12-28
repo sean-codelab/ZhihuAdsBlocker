@@ -56,7 +56,7 @@ var hideMatchingPatterns = function(xpaths) {
 
 // Delete all children of hidden nodes
 var deleteChildren = function() {
-	var markedXPath = "//div[(@class='Card TopstoryItem' or @class='List-item') and @ishiddenbyplugin='true']";
+	var markedXPath = "//div[(contains(@class, 'Card TopstoryItem') or contains(@class, 'List-item')) and @ishiddenbyplugin='true']";
 	var allHiddenNodeList = document.evaluate(markedXPath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 	if(allHiddenNodeList != null) {
 		for(let i = 0, length = allHiddenNodeList.snapshotLength; i < length; ++i) {
