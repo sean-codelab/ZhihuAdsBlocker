@@ -304,6 +304,10 @@ var blockVoters = function(info) {
 	}
 
 	selection = info.selectionText;
+	if(selection.length < 6) {
+		sendBannerMessage("To reduce the risk of blocking another irrelevant answer, please select more than 6 characters.");
+		return;
+	}
 	// Let current active tab to look for answer ID
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		chrome.tabs.sendMessage(tabs[0].id, {selectionText: selection}, function(response) {
