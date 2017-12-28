@@ -84,6 +84,77 @@ chrome.browserAction.onClicked.addListener(function() {
 	}
 });
 
+var sendBannerMessage = function(message) {
+	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
+		if(typeof(tabs) !== 'undefined' && tabs[0] !== undefined && tabs[0].id !== undefined && isValidZhihuUrl(tabs[0].url)) {
+			chrome.tabs.sendMessage(tabs[0].id, {showMessage: message}, function(response) {});
+		}
+	});
+}
+
+var blockTid = function(tid, topicName, currentUrl) {
+	// Get xsrf token from cookie
+	chrome.cookies.get({url: currentUrl, name: '_xsrf'}, function(cookie) {
+		var blockRequest = new XMLHttpRequest();
+		blockRequest.onreadystatechange = function(result) {
+			if(blockRequest.readyState === XMLHttpRequest.DONE) {
+				if(blockRequest.status === 200) {
+					console.log("Topic has been successfully blocked.");
+					sendBannerMessage("Topic " + topicName + " has been successfully blocked.");
+				}
+				else {
+					sendBannerMessage("Error: blocking request of topic " + topicName + " has failed.");
+				}
+			}
+		}
+		blockRequest.open("POST", "https://www.zhihu.com/topic/ignore", true);
+		blockRequest.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8');
+		blockRequest.send("tid=" + tid + "&method=add&_xsrf=" + cookie.value);
+	});
+}
+
+// To block a topic, we need 2 steps:
+// 1. Get tid of a given topicId. This is handled by an autocomplete GET request.
+// 2. Block this tid. This is handled by a POST request that needs authentication.
+var blockTopic = function(topicName, topicId, currentUrl) {
+	if(topicName === undefined || topicId === undefined) {
+		sendBannerMessage("Error: topicName/topicId cannot be found.");
+		return;
+	}
+
+	console.log("Block this topic: " + topicName + "; ID: " + topicId);
+	var getTidRequest = new XMLHttpRequest();
+	getTidRequest.onreadystatechange = function(result) {
+		if(getTidRequest.readyState === XMLHttpRequest.DONE) {
+			if(getTidRequest.status === 200) {
+				var autoCompleteResult = JSON.parse(getTidRequest.responseText);
+				autoCompleteResult = autoCompleteResult[0];
+				var found = false;
+				for(let res of autoCompleteResult) {
+					if(Array.isArray(res) && res.indexOf(topicId) !== -1) {
+						var tid = res[4];
+						if(tid !== undefined && Number.isInteger(tid)) {
+							blockTid(tid, topicName, currentUrl);
+							found = true;
+						}
+						else {
+							sendBannerMessage("Error: tid does not exist in the entry of given topic ID.");
+						}
+					}
+				}
+				if(!found) {
+					sendBannerMessage("Error: cannot find tid from topic name and ID.");
+				}
+			}
+			else {
+
+			}
+		}
+	}
+	getTidRequest.open("GET", "https://www.zhihu.com/topic/autocomplete?token=" + topicName + "&max_matches=10&use_similar=0", true);
+	getTidRequest.send(null);
+}
+
 // Block a specific user
 var blockUser = function(info) {
 	if(disabled) {
@@ -100,6 +171,11 @@ var blockUser = function(info) {
 		if(urlSplit.length >= 2 && (urlSplit[urlSplit.length - 2] === "people" || urlSplit[urlSplit.length - 2] === "org")) {
 			userId = urlSplit[urlSplit.length - 1];
 		}
+		// Otherwise, if it is a topic link, block this topic
+		else if(urlSplit.length >= 2 && (urlSplit[urlSplit.length - 2] === "topic")) {
+			blockTopic(info.selectionText, urlSplit[urlSplit.length - 1], url);
+			return;
+		}
 	}
 
 	if(userId) {
@@ -110,10 +186,7 @@ var blockUser = function(info) {
 // Given a user ID, block this user
 var blockUserID = function(userId, retry) {
 	if(retry <= 0) {
-		console.log("ERROR: Running out of retry attempts.");
-		chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
-			chrome.tabs.sendMessage(tabs[0].id, {failToBlock: true, blockUserId: userId}, function(response) {});
-		});
+		sendBannerMessage("Error: block request has failed for user " + userId);
 		return;
 	}
 
@@ -123,14 +196,9 @@ var blockUserID = function(userId, retry) {
 		}
 		var blockRequest = new XMLHttpRequest();
 		blockRequest.onreadystatechange = function(result) {
-			if(blockRequest.readyState == XMLHttpRequest.DONE) {
-				if(blockRequest.status == 204) {
-					console.log("Blocking succeeded.");
-					chrome.tabs.query({active: true, currentWindow: true}, function(tabs) { 
-						if(typeof(tabs) !== 'undefined' && tabs[0] !== undefined && tabs[0].id !== undefined) {
-							chrome.tabs.sendMessage(tabs[0].id, {blockUserId: userId}, function(response) {});
-						}
-					});
+			if(blockRequest.readyState === XMLHttpRequest.DONE) {
+				if(blockRequest.status === 204) {
+					sendBannerMessage("User has been successfully blocked: " + userId);
 				}
 				else {
 					console.log("ERROR: Blocking failed!\nRetry " + (retry - 1) + " more times.");
@@ -159,11 +227,10 @@ var addToFavList = function(answerId, isAnswer) {
 	addRequest.onreadystatechange = function(result) {
 		if(addRequest.readyState === XMLHttpRequest.DONE) {
 			if(addRequest.status === 200) {
-				// Pass
+				sendBannerMessage("Answer/article has been added to the FavList for tracking purpose.");
 			}
 			else {
-				console.log("Error: fail to add to favList.");
-				console.log(result);
+				sendBannerMessage("Error: fail to add to favList.");
 			}
 		}
 	};
@@ -232,7 +299,6 @@ var blockVoters = function(info) {
 	// In this case, if user clicks "Block these voters", he's more likely to block a user, not a group of voters
 	// Therefore, it redirects to blockUser()
 	if(info.linkUrl !== undefined) {
-		console.log(info.linkUrl);
 		blockUser(info);
 		return;
 	}
@@ -242,7 +308,7 @@ var blockVoters = function(info) {
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		chrome.tabs.sendMessage(tabs[0].id, {selectionText: selection}, function(response) {
 			if(typeof(response) === "undefined" || response.answerId === undefined) {
-				console.log("Frontend failed to give back answer ID or upvote count.");
+				sendBannerMessage("Error: cannot locate target answer. Reselect another text area and try again.");
 			}
 			else {
 				addToFavList(response.answerId, response.isAnswer);

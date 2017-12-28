@@ -1,12 +1,13 @@
 {
 	"manifest_version": 2,
 	"name": "Zhihu ads blocker",
-	"version": "0.4",
+	"version": "0.5",
 	"permissions": [
 		"webRequest",
 		"tabs",
 		"contextMenus",
 		"storage",
+		"cookies",
 		"*://*.zhihu.com/"
 	],
 	"icons": {

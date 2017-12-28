@@ -155,13 +155,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 	if(request.forceUpdate !== undefined && request.forceUpdate === true) {
 		updateFilter();
 	}
-	if(request.blockUserId !== undefined) {
-		if(request.failToBlock !== undefined) {
-			displayErrorBannerForBlockUser(request.blockUserId);
-		}
-		else {
-			displayBannerForBlockUser(request.blockUserId);
-		}
+	if(request.showMessage !== undefined) {
+		displayBannerMessage(request.showMessage);
 	}
 	sendResponse(responsePayload);
 });
@@ -310,12 +305,4 @@ var displayBannerMessage = function(message) {
 			withdrawBanner(function() {});
 		}, 4000);
 	});
-}
-
-var displayErrorBannerForBlockUser = function(blockUserId) {
-	displayBannerMessage("Error: block request has failed for user " + blockUserId);
-}
-
-var displayBannerForBlockUser = function(blockUserId) {
-	displayBannerMessage("User has been successfully blocked: " + blockUserId);
 }
