@@ -477,3 +477,29 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 		});
 	}
 });
+
+var removeFromLocal = function(userId) {
+	chrome.storage.local.remove(userId, function() {});
+}
+
+var addToLocal = function(userId) {
+	var pair = {}
+	pair[userId] = true;
+	chrome.storage.local.set(pair, function() {});
+}
+
+chrome.webRequest.onCompleted.addListener(function(details) {
+	console.log(details);
+	var url = details.url;
+	// Remove header 'https://www.zhihu.com/api/v4/members/'
+	url = url.substring(37);
+	var userId = url.split('/')[0]
+	if(details.method === 'DELETE') {
+		sendBannerMessage("Remove " + userId + " from local blacklist.");
+		removeFromLocal(userId);
+	}
+	else if(details.method === 'POST') {
+		sendBannerMessage("Add " + userId + " to local blacklist.");
+		addToLocal(userId);
+	}
+}, {urls: ["https://www.zhihu.com/api/v4/members/*/actions/block"]});
