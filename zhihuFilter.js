@@ -11,7 +11,9 @@ var removedXPaths = [
 	// Delete bottom QRCode promotion banner
 	"//div[@class='HitQrcode']/parent::span",
 	// Delete right column promotions
-	"//div[@data-za-detail-view-path-module_name='相关推荐']"
+	"//div[@data-za-detail-view-path-module_name='相关推荐']",
+	// Delete Kanshan ads. Poor Zhihu FE wrote a typo here
+	"//div[@class='KanshanDiversion']"
 ];
 // All patterns, in this category, should be referring to div[@class='Card TopstoryItem'] web elements
 var hiddenXPaths = [
