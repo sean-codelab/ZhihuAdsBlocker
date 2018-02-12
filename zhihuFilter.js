@@ -13,7 +13,9 @@ var removedXPaths = [
 	// Delete right column promotions
 	"//div[@data-za-detail-view-path-module_name='相关推荐']",
 	// Delete Kanshan ads. Poor Zhihu FE wrote a typo here
-	"//div[@class='KanshanDiversion']"
+	"//div[@class='KanshanDiversion']",
+	// Delete Questioning ads
+	"//div[@class='Lottie Kok']"
 ];
 // All patterns, in this category, should be referring to div[@class='Card TopstoryItem'] web elements
 var hiddenXPaths = [
