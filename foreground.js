@@ -76,18 +76,21 @@ var findAnswerId = function(selectionText, responsePayload) {
 	var xpath_answer = "//text()[contains(., '" + selectionText + "')]/ancestor::div[@class='ContentItem AnswerItem']";
 	var xpath_article = "//text()[contains(., '" + selectionText + "')]/ancestor::div[contains(@class, 'ArticleItem')]";
 	var xpath_column = "//text()[contains(., '" + selectionText + "')]/ancestor::div[contains(@class, 'Layout-main')]/div[@data-zop]";
+	var xpath_column_new = "//text()[contains(., '" + selectionText + "')]/ancestor::main[contains(@class, 'App-main')]/div[@data-zop]";
 	var xpath_old_answer = "//text()[contains(., '" + selectionText + "')]/ancestor::div[@class='zm-item-answer ']";
 	var xpath_old_article = "//text()[contains(., '" + selectionText + "')]/ancestor::div[@class='zm-item-feed zm-item-post']";
 
 	var answerList = document.evaluate(xpath_answer, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 	var articleList = document.evaluate(xpath_article, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 	var columnList = document.evaluate(xpath_column, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+	var newColumnList = document.evaluate(xpath_column_new, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 	var oldAnswerList = document.evaluate(xpath_old_answer, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 	var oldArticleList = document.evaluate(xpath_old_article, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 
 	var answerListLength = answerList.snapshotLength;
 	var articleListLength = articleList.snapshotLength;
 	var columnListLength = columnList.snapshotLength;
+	var newColumnListLength = newColumnList.snapshotLength;
 	var oldAnswerListLength = oldAnswerList.snapshotLength;
 	var oldArticleListLength = oldArticleList.snapshotLength;
 	var overallLength = answerListLength + articleListLength + columnListLength + oldAnswerListLength + oldArticleList;
@@ -117,6 +120,12 @@ var findAnswerId = function(selectionText, responsePayload) {
 		}
 		else if(columnListLength !== 0) {
 			var articleItem = JSON.parse(columnList.snapshotItem(0).getAttribute('data-zop'));
+			var articleId = articleItem.itemId;
+			responsePayload['answerId'] = articleId;
+			responsePayload['isAnswer'] = false;
+		}
+		else if(newColumnListLength !== 0) {
+			var articleItem = JSON.parse(newColumnList.snapshotItem(0).getAttribute('data-zop'));
 			var articleId = articleItem.itemId;
 			responsePayload['answerId'] = articleId;
 			responsePayload['isAnswer'] = false;
