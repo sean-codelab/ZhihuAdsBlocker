@@ -15,7 +15,9 @@ var removedXPaths = [
 	// Delete Kanshan ads. Poor Zhihu FE wrote a typo here
 	"//div[@class='KanshanDiversion']",
 	// Delete Questioning ads
-	"//div[@class='Lottie Kok']"
+	"//div[@class='Lottie Kok']",
+	// Delete Adblock banner
+	"//div[@class='AdblockBanner']"
 ];
 // All patterns, in this category, should be referring to div[@class='Card TopstoryItem'] web elements
 var hiddenXPaths = [
