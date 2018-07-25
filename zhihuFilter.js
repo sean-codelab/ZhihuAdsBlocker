@@ -17,7 +17,9 @@ var removedXPaths = [
 	// Delete Questioning ads
 	"//div[@class='Lottie Kok']",
 	// Delete Adblock banner
-	"//div[@class='AdblockBanner']"
+	"//div[@class='AdblockBanner']",
+	// Delete Reward button
+	"//div[@class='Reward']/parent::div"
 ];
 // All patterns, in this category, should be referring to div[@class='Card TopstoryItem'] web elements
 var hiddenXPaths = [
