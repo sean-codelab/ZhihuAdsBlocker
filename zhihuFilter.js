@@ -19,7 +19,9 @@ var removedXPaths = [
 	// Delete Adblock banner
 	"//div[@class='AdblockBanner']",
 	// Delete Reward button
-	"//div[@class='Reward']/parent::div"
+	"//div[@class='Reward']/parent::div",
+	// Delete right column LIVE ads
+	"//div[@class='Card-header RelatedCommodities-title']/parent::div"
 ];
 // All patterns, in this category, should be referring to div[@class='Card TopstoryItem'] web elements
 var hiddenXPaths = [
