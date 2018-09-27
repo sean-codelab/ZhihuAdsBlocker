@@ -31,6 +31,7 @@ var removedXPaths = [
 var hiddenXPaths = [
 	// Hide Ads cards
 	"//button[contains(@class, 'TopstoryItem-advertButton')]/ancestor::div[contains(@class, 'Card TopstoryItem')]",
+	"//div[contains(@class, 'TopstoryItem--advertCard')]",
 	// Hide ALL LIVE related ads & posts
 	"//span[contains(text(), '参与了 Live')]/ancestor::div[@class='Card TopstoryItem']",
 	"//span[contains(text(), '对 Live 感兴趣')]/ancestor::div[@class='Card TopstoryItem']",
