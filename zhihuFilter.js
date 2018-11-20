@@ -31,7 +31,7 @@ var removedXPaths = [
 var hiddenXPaths = [
 	// Hide Ads cards
 	"//button[contains(@class, 'TopstoryItem-advertButton')]/ancestor::div[contains(@class, 'Card TopstoryItem')]",
-	"//div[contains(@class, 'TopstoryItem--advertCard')]",
+	"//div[contains(@class, 'TopstoryItem--advertCard') and @ishiddenbyplugin != 'true']",
 	// Hide ALL LIVE related ads & posts
 	"//span[contains(text(), '参与了 Live')]/ancestor::div[@class='Card TopstoryItem']",
 	"//span[contains(text(), '对 Live 感兴趣')]/ancestor::div[@class='Card TopstoryItem']",
@@ -42,7 +42,9 @@ var hiddenXPaths = [
 	// Hide Column notices
 	"//div[@data-za-module='ColumnItem']/ancestor::div[@class='Card TopstoryItem']",
 	// Hide Events
-	"//div[@data-za-detail-view-path-module='EventItem']/ancestor::div[@class='Card TopstoryItem']"
+	"//div[@data-za-detail-view-path-module='EventItem']/ancestor::div[@class='Card TopstoryItem']",
+	// Hide Google Ads
+	"//div[@class='Advert-adsense']/ancestor::div[@class='Card TopstoryItem']"
 ];
 // This category stores patterns that could be either hidden or exposed
 var orgPostsXPaths = [
