@@ -44,7 +44,7 @@ var hiddenXPaths = [
 	// Hide Events
 	"//div[@data-za-detail-view-path-module='EventItem']/ancestor::div[@class='Card TopstoryItem']",
 	// Hide Google Ads
-	"//div[@class='Advert-adsense']/ancestor::div[@class='Card TopstoryItem']"
+	"//div[@class='Advert-adsense']/ancestor::div[contains(@class, 'Card TopstoryItem')]"
 ];
 // This category stores patterns that could be either hidden or exposed
 var orgPostsXPaths = [
