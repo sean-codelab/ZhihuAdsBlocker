@@ -19,7 +19,7 @@ var removedXPaths = [
 	// Delete Adblock banner
 	"//div[@class='AdblockBanner']",
 	// Delete Reward button
-	"//div[@class='Reward']/parent::div",
+	"//div[@class='Reward']",
 	// Delete right column LIVE ads
 	"//div[@class='Card-header RelatedCommodities-title']/parent::div",
 	// Delete right column card ads
@@ -27,29 +27,29 @@ var removedXPaths = [
 	// Delete AdSense Ads
 	"//iframe[@class='Banner-adsense']/ancestor::div[@class='Card Banner']"
 ];
-// All patterns, in this category, should be referring to div[@class='Card TopstoryItem'] web elements
+// All patterns, in this category, should be referring to div[contains(@class, 'Card TopstoryItem')] web elements
 var hiddenXPaths = [
 	// Hide Ads cards
 	"//button[contains(@class, 'TopstoryItem-advertButton')]/ancestor::div[contains(@class, 'Card TopstoryItem')]",
 	"//div[contains(@class, 'TopstoryItem--advertCard') and @ishiddenbyplugin != 'true']",
 	// Hide ALL LIVE related ads & posts
-	"//span[contains(text(), '参与了 Live')]/ancestor::div[@class='Card TopstoryItem']",
-	"//span[contains(text(), '对 Live 感兴趣')]/ancestor::div[@class='Card TopstoryItem']",
-	"//span[contains(text(), '赞助了 Live')]/ancestor::div[@class='Card TopstoryItem']",
-	"//div[@class='LiveItem']/ancestor::div[@class='Card TopstoryItem']",
+	"//span[contains(text(), '参与了 Live')]/ancestor::div[contains(@class, 'Card TopstoryItem')]",
+	"//span[contains(text(), '对 Live 感兴趣')]/ancestor::div[contains(@class, 'Card TopstoryItem')]",
+	"//span[contains(text(), '赞助了 Live')]/ancestor::div[contains(@class, 'Card TopstoryItem')]",
+	"//div[@class='LiveItem']/ancestor::div[contains(@class, 'Card TopstoryItem')]",
 	// Hide EBook Ads cards
-	"//div[contains(@class, 'EBookItem')]/ancestor::div[@class='Card TopstoryItem']",
+	"//div[contains(@class, 'EBookItem')]/ancestor::div[contains(@class, 'Card TopstoryItem')]",
 	// Hide Column notices
-	"//div[@data-za-module='ColumnItem']/ancestor::div[@class='Card TopstoryItem']",
+	"//div[@data-za-module='ColumnItem']/ancestor::div[contains(@class, 'Card TopstoryItem')]",
 	// Hide Events
-	"//div[@data-za-detail-view-path-module='EventItem']/ancestor::div[@class='Card TopstoryItem']",
+	"//div[@data-za-detail-view-path-module='EventItem']/ancestor::div[contains(@class, 'Card TopstoryItem')]",
 	// Hide Google Ads
 	"//div[@class='Advert-adsense']/ancestor::div[contains(@class, 'Card TopstoryItem')]"
 ];
 // This category stores patterns that could be either hidden or exposed
 var orgPostsXPaths = [
 	// Hide posts from certified org accounts
-	"//a[contains(@data-tooltip, '已认证的官方帐号')]/ancestor::div[@class='Card TopstoryItem']",
+	"//a[contains(@data-tooltip, '已认证的官方帐号')]/ancestor::div[contains(@class, 'Card TopstoryItem')]",
 	"//a[contains(@data-tooltip, '已认证的官方帐号')]/ancestor::div[@class='List-item']"
 ];
 // Collection of blocked answers/articles. THIS IS PERSONAL.
