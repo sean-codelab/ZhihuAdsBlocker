@@ -19,11 +19,11 @@ var disabledBadgeText = function() {
 	chrome.browserAction.setBadgeText({text: "OFF"});
 }
 
-var customizedHiddenXPaths = hiddenXPaths.concat(orgPostsXPaths);
+var customizedHiddenXPaths = hiddenXPaths;
 
 chrome.contextMenus.create({
 	type: "checkbox",
-	checked: true,
+	checked: false,
 	title: "Block posts from certified org accounts",
 	contexts: ["browser_action"],
 	onclick: function(info, tab) {

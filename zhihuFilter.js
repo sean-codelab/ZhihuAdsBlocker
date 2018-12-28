@@ -25,7 +25,9 @@ var removedXPaths = [
 	// Delete right column card ads
 	"//img[@alt='广告']/ancestor::div[@class='Card Banner']",
 	// Delete AdSense Ads
-	"//iframe[@class='Banner-adsense']/ancestor::div[@class='Card Banner']"
+	"//iframe[@class='Banner-adsense']/ancestor::div[@class='Card Banner']",
+	// Delete sidebar ads
+	"//a[@rel='noopener noreferrer']/parent::div[contains(@class, 'Pc-card')]"
 ];
 // All patterns, in this category, should be referring to div[contains(@class, 'Card TopstoryItem')] web elements
 var hiddenXPaths = [
