@@ -27,7 +27,8 @@ var removedXPaths = [
 	// Delete AdSense Ads
 	"//iframe[@class='Banner-adsense']/ancestor::div[@class='Card Banner']",
 	// Delete sidebar ads
-	"//a[@rel='noopener noreferrer']/parent::div[contains(@class, 'Pc-card')]"
+	"//a[@rel='noopener noreferrer']/parent::div[contains(@class, 'Pc-card')]",
+	"//div[@class='Pc-card Card']"
 ];
 // All patterns, in this category, should be referring to div[contains(@class, 'Card TopstoryItem')] web elements
 var hiddenXPaths = [
@@ -46,7 +47,9 @@ var hiddenXPaths = [
 	// Hide Events
 	"//div[@data-za-detail-view-path-module='EventItem']/ancestor::div[contains(@class, 'Card TopstoryItem')]",
 	// Hide Google Ads
-	"//div[@class='Advert-adsense']/ancestor::div[contains(@class, 'Card TopstoryItem')]"
+	"//div[@class='Advert-adsense']/ancestor::div[contains(@class, 'Card TopstoryItem')]",
+	// Hide Ads
+	"//div[contains(@class, 'Pc-feedAd-container')]/ancestor::div[contains(@class, 'Card TopstoryItem')]"
 ];
 // This category stores patterns that could be either hidden or exposed
 var orgPostsXPaths = [
